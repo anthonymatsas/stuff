@@ -14,6 +14,13 @@
 		"category": "HTML/JS"
 	},
 	{
+		"name": "Baby Food Tracker",
+		"path": "baby-food-tracker",
+		"desc": "Track foods introduced to your baby with dates and reactions. Stores locally in the browser.",
+		"tag": "llm",
+		"category": "HTML/JS"
+	},
+	{
 		"name": "milo",
 		"url": "https://github.com/anthonymatsas/milo",
 		"desc": "cli tool exposing apples on device foundation models",

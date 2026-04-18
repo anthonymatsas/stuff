@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Baby Food Tracker</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #fce4ec 0%, #e3f2fd 100%);
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      padding: 30px;
+    }
+
+    .title {
+      font-size: 32px;
+      font-weight: bold;
+      color: #333;
+      margin: 0 0 8px 0;
+    }
+
+    .subtitle {
+      color: #666;
+      margin: 0 0 24px 0;
+      font-size: 16px;
+    }
+
+    .count {
+      font-weight: 600;
+      color: #2196f3;
+    }
+
+    .import-toggle {
+      padding: 8px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      background-color: #f0f0f0;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+
+    .import-wrapper { margin-bottom: 20px; }
+
+    .import-panel {
+      margin-top: 15px;
+      padding: 15px;
+      background-color: #f9f9f9;
+      border-radius: 8px;
+    }
+
+    .import-panel p {
+      margin-top: 0;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .import-panel textarea {
+      width: 100%;
+      min-height: 150px;
+      padding: 10px;
+      font-size: 14px;
+      font-family: monospace;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      resize: vertical;
+    }
+
+    .import-actions {
+      margin-top: 10px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .import-actions button {
+      padding: 8px 20px;
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      border-radius: 4px;
+    }
+
+    .btn-primary { background-color: #4CAF50; color: white; }
+    .btn-secondary { background-color: #ccc; }
+
+    .input-section {
+      position: relative;
+      margin-bottom: 24px;
+    }
+
+    .input {
+      width: 100%;
+      padding: 12px 16px;
+      font-size: 18px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .input:focus {
+      border-color: #2196f3;
+      box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+    }
+
+    .input-error { border-color: #f44336; }
+
+    .input-error:focus {
+      box-shadow: 0 0 0 3px rgba(244, 67, 54, 0.1);
+    }
+
+    .error-message {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #f44336;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+
+    .suggestions {
+      position: absolute;
+      z-index: 10;
+      width: 100%;
+      margin-top: 4px;
+      background: white;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .suggestion-item {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 12px 16px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.2s;
+    }
+
+    .suggestion-item:hover { background-color: #e3f2fd; }
+
+    .table-container {
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .food-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .food-table thead { background-color: #f5f5f5; }
+
+    .food-table th {
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 14px;
+      font-weight: 600;
+      color: #555;
+    }
+
+    .col-number, .col-action { width: 60px; }
+
+    .food-table tbody tr {
+      border-top: 1px solid #ddd;
+      transition: background-color 0.2s;
+    }
+
+    .food-table tbody tr:hover { background-color: #f9f9f9; }
+
+    .food-table td { padding: 12px 16px; }
+
+    .food-number {
+      color: #666;
+      font-family: 'Courier New', monospace;
+    }
+
+    .food-name { color: #333; }
+    .food-date { cursor: pointer; }
+
+    .empty-state {
+      padding: 32px 16px;
+      text-align: center;
+      color: #999;
+    }
+
+    .remove-btn {
+      background: none;
+      border: none;
+      color: #f44336;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 4px 8px;
+      transition: color 0.2s;
+    }
+
+    .remove-btn:hover { color: #d32f2f; }
+
+    .bottom-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 16px;
+    }
+
+    .clear-btn {
+      background: none;
+      border: none;
+      color: #f44336;
+      text-decoration: underline;
+      cursor: pointer;
+      font-size: 14px;
+      transition: color 0.2s;
+    }
+
+    .clear-btn:hover { color: #d32f2f; }
+    .purge-btn { color: #ff9800; }
+
+    .response-select {
+      padding: 4px;
+      font-size: 14px;
+    }
+
+    .hidden { display: none; }
+
+    @media (max-width: 768px) {
+      body { padding: 12px; }
+      .card { padding: 20px; }
+      .title { font-size: 24px; }
+      .input { font-size: 16px; }
+      .food-table th, .food-table td { padding: 10px 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1 class="title"><span id="title-emoji"></span> Baby Food Tracker</h1>
+      <p class="subtitle">Total foods tried: <span class="count" id="count">0</span></p>
+
+      <div class="import-wrapper">
+        <button class="import-toggle" id="import-toggle">Import Data</button>
+        <div class="import-panel hidden" id="import-panel">
+          <p>
+            Paste your data below. Format: Food Name [tab/comma] Date [tab/comma] Response (optional)
+            <br>
+            Example: Apple&#9;2024-01-15&#9;liked
+          </p>
+          <textarea id="import-text" placeholder="Apple&#9;2024-01-15&#9;liked&#10;Banana&#9;2024-01-16&#10;Carrots&#9;2024-01-17&#9;disliked"></textarea>
+          <div class="import-actions">
+            <button class="btn-primary" id="import-confirm">Import</button>
+            <button class="btn-secondary" id="import-cancel">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="input-section">
+        <input type="text" id="food-input" class="input" placeholder="Type a new food...">
+        <div class="error-message hidden" id="error-msg">⚠️ This food has already been added!</div>
+        <div class="suggestions hidden" id="suggestions"></div>
+      </div>
+
+      <div class="table-container">
+        <table class="food-table">
+          <thead>
+            <tr>
+              <th class="col-number">#</th>
+              <th>Food</th>
+              <th>Date</th>
+              <th>Response</th>
+              <th class="col-action"></th>
+            </tr>
+          </thead>
+          <tbody id="food-tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="bottom-actions hidden" id="bottom-actions">
+        <button class="clear-btn purge-btn" id="purge-btn">Purge &amp; Export</button>
+        <button class="clear-btn" id="clear-btn">Clear all foods</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const FOOD_EMOJIS = ['🍎','🍌','🥑','🥕','🥦','🍠','🍜','🥗','🍇','🍓','🫐','🥒','🍅','🥔','🌽','🍑','🍐','🥭'];
+    const COMMON_FOODS = [
+      'Apple','Avocado','Banana','Blueberries','Broccoli','Butternut Squash',
+      'Carrots','Cauliflower','Chicken','Cucumber','Eggs','Green Beans',
+      'Mango','Oatmeal','Pasta','Peaches','Pears','Peas','Potato',
+      'Quinoa','Rice','Salmon','Spinach','Strawberries','Sweet Potato',
+      'Tomato','Turkey','Yogurt','Zucchini'
+    ];
+
+    const state = {
+      foods: [],
+      suggestions: [],
+      editingDate: null,
+      showImport: false,
+    };
+
+    const $ = id => document.getElementById(id);
+    const inputEl = $('food-input');
+    const errorEl = $('error-msg');
+    const suggestionsEl = $('suggestions');
+    const tbodyEl = $('food-tbody');
+    const countEl = $('count');
+    const importPanel = $('import-panel');
+    const importText = $('import-text');
+    const importToggle = $('import-toggle');
+    const bottomActions = $('bottom-actions');
+
+    $('title-emoji').textContent = FOOD_EMOJIS[Math.floor(Math.random() * FOOD_EMOJIS.length)];
+
+    // --- persistence ---
+    function loadFoods() {
+      const saved = localStorage.getItem('babyFoods');
+      if (!saved) return;
+      try { state.foods = JSON.parse(saved); }
+      catch (e) { console.error('Error loading foods:', e); }
+    }
+
+    function saveFoods() {
+      localStorage.setItem('babyFoods', JSON.stringify(state.foods));
+    }
+
+    // --- helpers ---
+    function isDuplicate(name) {
+      const n = name.trim().toLowerCase();
+      return state.foods.some(f => f.name.toLowerCase() === n);
+    }
+
+    function formatDate(dateStr) {
+      const [year, month, day] = dateStr.split('-');
+      return `${month}/${day}/${year.slice(2)}`;
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[c]));
+    }
+
+    // --- rendering ---
+    function renderCount() {
+      countEl.textContent = state.foods.length;
+    }
+
+    function renderSuggestions() {
+      if (state.suggestions.length === 0) {
+        suggestionsEl.classList.add('hidden');
+        suggestionsEl.innerHTML = '';
+        return;
+      }
+      suggestionsEl.classList.remove('hidden');
+      suggestionsEl.innerHTML = state.suggestions
+        .map(s => `<button class="suggestion-item" data-suggestion="${escapeHtml(s)}">${escapeHtml(s)}</button>`)
+        .join('');
+    }
+
+    function renderError(show) {
+      errorEl.classList.toggle('hidden', !show);
+      inputEl.classList.toggle('input-error', show);
+    }
+
+    function renderTable() {
+      if (state.foods.length === 0) {
+        tbodyEl.innerHTML = `<tr><td colspan="5" class="empty-state">No foods added yet. Start typing to add one!</td></tr>`;
+        bottomActions.classList.add('hidden');
+        return;
+      }
+      bottomActions.classList.remove('hidden');
+      tbodyEl.innerHTML = state.foods.map((food, i) => {
+        const dateCell = state.editingDate === i
+          ? `<input type="date" value="${food.date}" data-edit-index="${i}" autofocus>`
+          : formatDate(food.date);
+        const resp = food.response || '';
+        return `
+          <tr>
+            <td class="food-number">${i + 1}</td>
+            <td class="food-name">${escapeHtml(food.name)}</td>
+            <td class="food-date" data-date-index="${i}">${dateCell}</td>
+            <td>
+              <select class="response-select" data-response-index="${i}">
+                <option value="" ${resp === '' ? 'selected' : ''}>-</option>
+                <option value="liked" ${resp === 'liked' ? 'selected' : ''}>👍</option>
+                <option value="disliked" ${resp === 'disliked' ? 'selected' : ''}>👎</option>
+                <option value="reaction" ${resp === 'reaction' ? 'selected' : ''}>⚠️</option>
+              </select>
+            </td>
+            <td><button class="remove-btn" data-remove-index="${i}">✕</button></td>
+          </tr>
+        `;
+      }).join('');
+
+      if (state.editingDate !== null) {
+        const el = tbodyEl.querySelector(`[data-edit-index="${state.editingDate}"]`);
+        if (el) el.focus();
+      }
+    }
+
+    function renderAll() {
+      renderCount();
+      renderTable();
+    }
+
+    // --- actions ---
+    function updateSuggestions(value) {
+      const normalized = value.trim().toLowerCase();
+      if (!normalized) {
+        state.suggestions = [];
+        renderError(false);
+        renderSuggestions();
+        return;
+      }
+      renderError(isDuplicate(value));
+      const all = new Set([...COMMON_FOODS, ...state.foods.map(f => f.name)]);
+      state.suggestions = [...all]
+        .filter(f => f.toLowerCase().includes(normalized) && f.toLowerCase() !== normalized)
+        .slice(0, 5);
+      renderSuggestions();
+    }
+
+    function addFood(name) {
+      const trimmed = name.trim();
+      if (!trimmed || isDuplicate(trimmed)) {
+        if (isDuplicate(trimmed)) renderError(true);
+        return;
+      }
+      const today = new Date().toISOString().split('T')[0];
+      state.foods.push({ name: trimmed, date: today, response: undefined });
+      saveFoods();
+      inputEl.value = '';
+      state.suggestions = [];
+      renderError(false);
+      renderSuggestions();
+      renderAll();
+      inputEl.focus();
+    }
+
+    function removeFood(i) {
+      state.foods.splice(i, 1);
+      saveFoods();
+      renderAll();
+    }
+
+    function updateResponse(i, value) {
+      state.foods[i].response = value || undefined;
+      saveFoods();
+    }
+
+    function updateDate(i, value) {
+      state.foods[i].date = value;
+      state.editingDate = null;
+      saveFoods();
+      renderAll();
+    }
+
+    function clearAll() {
+      if (!confirm('Are you sure you want to clear all foods?')) return;
+      state.foods = [];
+      saveFoods();
+      renderAll();
+    }
+
+    function purgeAndExport() {
+      if (!confirm('This will export all data to a JSON file and clear the tracker. Continue?')) return;
+      const blob = new Blob([JSON.stringify(state.foods, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `baby-foods-export-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      state.foods = [];
+      saveFoods();
+      renderAll();
+    }
+
+    function handleImport() {
+      const lines = importText.value.trim().split('\n');
+      const imported = [];
+      const skipped = [];
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        const parts = line.includes('\t') ? line.split('\t') : line.split(',');
+        if (parts.length < 2) continue;
+        const name = parts[0].trim();
+        const date = parts[1].trim();
+        let response;
+        if (parts.length >= 3) {
+          const r = parts[2].trim().toLowerCase();
+          if (r.includes('dislike') || r === '👎') response = 'disliked';
+          else if (r.includes('like') || r === '👍') response = 'liked';
+          else if (r.includes('reaction') || r === '⚠️') response = 'reaction';
+        }
+        if (!name || !date) continue;
+        if (isDuplicate(name)) skipped.push(name);
+        else imported.push({ name, date, response });
+      }
+      if (imported.length === 0 && skipped.length === 0) {
+        alert('No valid data found. Make sure the format is: Food Name [tab/comma] Date [tab/comma] Response (optional)');
+        return;
+      }
+      state.foods.push(...imported);
+      saveFoods();
+      importText.value = '';
+      state.showImport = false;
+      importPanel.classList.add('hidden');
+      importToggle.textContent = 'Import Data';
+      renderAll();
+      let msg = `Successfully imported ${imported.length} food(s)!`;
+      if (skipped.length > 0) msg += `\n\nSkipped ${skipped.length} duplicate(s):\n${skipped.join(', ')}`;
+      alert(msg);
+    }
+
+    // --- event wiring ---
+    inputEl.addEventListener('input', e => updateSuggestions(e.target.value));
+
+    inputEl.addEventListener('keydown', e => {
+      if (e.key !== 'Enter') return;
+      const value = inputEl.value.trim();
+      if (!value || isDuplicate(value)) return;
+      e.preventDefault();
+      if (state.suggestions.length === 1) addFood(state.suggestions[0]);
+      else addFood(value);
+    });
+
+    suggestionsEl.addEventListener('click', e => {
+      const btn = e.target.closest('[data-suggestion]');
+      if (btn) addFood(btn.dataset.suggestion);
+    });
+
+    document.addEventListener('click', e => {
+      if (!inputEl.contains(e.target) && !suggestionsEl.contains(e.target)) {
+        state.suggestions = [];
+        renderSuggestions();
+      }
+    });
+
+    tbodyEl.addEventListener('click', e => {
+      const removeBtn = e.target.closest('[data-remove-index]');
+      if (removeBtn) { removeFood(+removeBtn.dataset.removeIndex); return; }
+      const dateCell = e.target.closest('[data-date-index]');
+      if (dateCell && state.editingDate !== +dateCell.dataset.dateIndex) {
+        state.editingDate = +dateCell.dataset.dateIndex;
+        renderTable();
+      }
+    });
+
+    tbodyEl.addEventListener('change', e => {
+      const respSel = e.target.closest('[data-response-index]');
+      if (respSel) { updateResponse(+respSel.dataset.responseIndex, respSel.value); return; }
+      const dateInput = e.target.closest('[data-edit-index]');
+      if (dateInput) updateDate(+dateInput.dataset.editIndex, dateInput.value);
+    });
+
+    tbodyEl.addEventListener('blur', e => {
+      const dateInput = e.target.closest('[data-edit-index]');
+      if (dateInput) { state.editingDate = null; renderTable(); }
+    }, true);
+
+    importToggle.addEventListener('click', () => {
+      state.showImport = !state.showImport;
+      importPanel.classList.toggle('hidden', !state.showImport);
+      importToggle.textContent = state.showImport ? 'Hide Import' : 'Import Data';
+    });
+
+    $('import-confirm').addEventListener('click', handleImport);
+    $('import-cancel').addEventListener('click', () => {
+      importText.value = '';
+      state.showImport = false;
+      importPanel.classList.add('hidden');
+      importToggle.textContent = 'Import Data';
+    });
+
+    $('clear-btn').addEventListener('click', clearAll);
+    $('purge-btn').addEventListener('click', purgeAndExport);
+
+    // --- init ---
+    loadFoods();
+    renderAll();
+  </script>
+</body>
+</html>
