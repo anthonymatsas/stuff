@@ -21,6 +21,13 @@
 		"category": "HTML/JS"
 	},
 	{
+		"name": "Nara Data Explorer",
+		"path": "nara-data-explorer",
+		"desc": "Drop a Narababy CSV export to visualize growth, sleep, feeds, and diapers. All processing is local.",
+		"tag": "llm",
+		"category": "HTML/JS"
+	},
+	{
 		"name": "milo",
 		"url": "https://github.com/anthonymatsas/milo",
 		"desc": "cli tool exposing apples on device foundation models",

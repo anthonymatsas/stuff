@@ -1,0 +1,1064 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nara Data Explorer</title>
+<style>
+  :root {
+    --bg: #f7f7f5;
+    --fg: #1a1a1a;
+    --muted: #666;
+    --card: #fff;
+    --border: #e5e5e3;
+    --accent: #2b6cb0;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: var(--fg);
+    background: var(--bg);
+  }
+  header {
+    padding: 24px 32px;
+    border-bottom: 1px solid var(--border);
+    background: var(--card);
+  }
+  header h1 { margin: 0; font-size: 20px; font-weight: 600; }
+  header p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+  main { padding: 24px 32px; max-width: 1400px; margin: 0 auto; }
+
+  #drop {
+    display: block;
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 40px;
+    text-align: center;
+    background: var(--card);
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  #drop.drag { border-color: var(--accent); background: #eef5fd; }
+  #drop p { margin: 0; color: var(--muted); }
+  #drop strong { color: var(--fg); }
+  #drop input { display: none; }
+
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin: 20px 0;
+  }
+  .stat {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 16px;
+  }
+  .stat .k { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+  .stat .v { font-size: 22px; font-weight: 600; margin-top: 2px; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
+    gap: 16px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px 20px;
+  }
+  .card.wide { grid-column: 1 / -1; }
+  .card h2 { margin: 0 0 12px; font-size: 14px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+  .card h2 .sub { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--muted); }
+  .card .chart-wrap { position: relative; height: 280px; }
+  .card .chart-wrap.tall { height: 360px; }
+  .empty { color: var(--muted); font-style: italic; padding: 20px 0; text-align: center; }
+  .file-meta {
+    margin: 12px 0 0;
+    color: var(--muted);
+    font-size: 12px;
+    text-align: center;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin: 12px 0 0;
+  }
+  .btn {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--fg);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font: inherit;
+    cursor: pointer;
+  }
+  .btn:hover:not(:disabled) { border-color: var(--accent); }
+  .btn:disabled {
+    cursor: default;
+    opacity: .5;
+  }
+  .btn.danger:hover:not(:disabled) {
+    border-color: #c53030;
+    color: #c53030;
+  }
+  .hidden { display: none !important; }
+  footer { color: var(--muted); font-size: 12px; padding: 16px 32px; text-align: center; }
+
+  @media (max-width: 720px) {
+    header, main, footer { padding-left: 16px; padding-right: 16px; }
+    #drop { padding: 28px 20px; }
+    .grid { grid-template-columns: 1fr; }
+    .card { padding: 14px 16px; }
+    .card .chart-wrap { height: 240px; }
+    .card .chart-wrap.tall { height: 300px; }
+    .stat .v { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Nara Data Explorer</h1>
+  <p>Drop a Narababy CSV export to visualize growth, sleep, feeds, diapers, and more.</p>
+</header>
+<main>
+  <label id="drop">
+    <input type="file" accept=".csv,text/csv">
+    <p><strong>Click to upload</strong> or drag a CSV here</p>
+  </label>
+  <p id="file-meta" class="file-meta hidden"></p>
+  <div class="actions">
+    <button id="save-btn" class="btn" type="button" disabled>Save results</button>
+    <button id="delete-btn" class="btn danger" type="button" disabled>Delete saved</button>
+  </div>
+
+  <div id="summary" class="summary hidden"></div>
+  <div id="charts" class="grid hidden"></div>
+</main>
+<footer>All processing is local — your CSV never leaves the browser. Reference growth bands are approximate and for visualization only.</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@2.0.1/dist/chartjs-chart-matrix.min.js"></script>
+<script>
+const drop = document.getElementById("drop");
+const input = drop.querySelector("input");
+const summaryEl = document.getElementById("summary");
+const chartsEl = document.getElementById("charts");
+const fileMetaEl = document.getElementById("file-meta");
+const saveBtn = document.getElementById("save-btn");
+const deleteBtn = document.getElementById("delete-btn");
+const STORAGE_KEY = "nara-data-explorer:saved-results";
+let activeCharts = [];
+let currentRows = null;
+let currentSource = null;
+
+drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("drag"); });
+drop.addEventListener("dragleave", () => drop.classList.remove("drag"));
+drop.addEventListener("drop", e => {
+  e.preventDefault();
+  drop.classList.remove("drag");
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+input.addEventListener("change", e => {
+  if (e.target.files[0]) handleFile(e.target.files[0]);
+});
+saveBtn.addEventListener("click", saveCurrentResults);
+deleteBtn.addEventListener("click", deleteSavedResults);
+
+function handleFile(file) {
+  fileMetaEl.textContent = `Loading ${file.name}...`;
+  fileMetaEl.classList.remove("hidden");
+  Papa.parse(file, {
+    header: true,
+    skipEmptyLines: true,
+    complete: ({ data }) => render(data, file),
+    error: err => {
+      fileMetaEl.textContent = "";
+      fileMetaEl.classList.add("hidden");
+      alert("Parse error: " + err.message);
+    },
+  });
+}
+
+// ---------- helpers ----------
+const parseDate = s => s ? new Date(s.replace(" ", "T")) : null;
+const formatDateTime = ts => new Date(ts).toLocaleString();
+const hasSavedResults = () => !!localStorage.getItem(STORAGE_KEY);
+
+function updateActions() {
+  saveBtn.disabled = !currentRows || !currentRows.length;
+  deleteBtn.disabled = !hasSavedResults();
+}
+
+function clearResults() {
+  activeCharts.forEach(c => c.destroy());
+  activeCharts = [];
+  currentRows = null;
+  currentSource = null;
+  summaryEl.innerHTML = "";
+  chartsEl.innerHTML = "";
+  summaryEl.classList.add("hidden");
+  chartsEl.classList.add("hidden");
+  fileMetaEl.textContent = "";
+  fileMetaEl.classList.add("hidden");
+  updateActions();
+}
+
+function saveCurrentResults() {
+  if (!currentRows || !currentRows.length) return;
+  const payload = {
+    savedAt: Date.now(),
+    fileName: currentSource?.name || "saved-results.csv",
+    rows: currentRows,
+  };
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    fileMetaEl.textContent = `${payload.fileName} · ${currentRows.length.toLocaleString()} rows · saved ${formatDateTime(payload.savedAt)}`;
+    fileMetaEl.classList.remove("hidden");
+    updateActions();
+  } catch (err) {
+    alert("Could not save results locally. The dataset may be too large for browser storage.");
+  }
+}
+
+function deleteSavedResults() {
+  if (!hasSavedResults()) return;
+  localStorage.removeItem(STORAGE_KEY);
+  if (currentSource?.saved) clearResults();
+  else {
+    updateActions();
+    if (currentSource?.name && currentRows) {
+      fileMetaEl.textContent = `${currentSource.name} · ${currentRows.length.toLocaleString()} rows`;
+      fileMetaEl.classList.remove("hidden");
+    }
+  }
+}
+
+function loadSavedResults() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return;
+  try {
+    const saved = JSON.parse(raw);
+    if (!saved || !Array.isArray(saved.rows) || !saved.rows.length) return;
+    render(saved.rows, { name: saved.fileName || "saved-results.csv", saved: true, savedAt: saved.savedAt || Date.now() });
+  } catch {
+    localStorage.removeItem(STORAGE_KEY);
+  }
+}
+
+const dayKey = d => {
+  const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, "0"), day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+const num = v => { const n = parseFloat(v); return Number.isFinite(n) ? n : null; };
+const DAY_MS = 86400000;
+
+function groupByDay(rows, getVal) {
+  const m = new Map();
+  for (const r of rows) {
+    const d = parseDate(r["Start Date/time"]);
+    if (!d) continue;
+    const v = getVal(r);
+    if (v == null) continue;
+    const k = dayKey(d);
+    m.set(k, (m.get(k) || 0) + v);
+  }
+  return [...m.entries()].sort().map(([k, v]) => ({ x: k, y: v }));
+}
+
+// ---------- rendering ----------
+function render(rows, file = null) {
+  activeCharts.forEach(c => c.destroy());
+  activeCharts = [];
+  chartsEl.innerHTML = "";
+  summaryEl.innerHTML = "";
+  currentRows = rows;
+  currentSource = file;
+
+  const profile = rows.find(r => r.Type === "Profile");
+  const birth = profile ? parseDate(profile["[Profile] Birth Date"]) : null;
+  const sex = profile ? profile["[Profile] Sex"] : null;
+
+  const types = {};
+  let minD = null, maxD = null;
+  for (const r of rows) {
+    types[r.Type] = (types[r.Type] || 0) + 1;
+    const d = parseDate(r["Start Date/time"]);
+    if (d) {
+      if (!minD || d < minD) minD = d;
+      if (!maxD || d > maxD) maxD = d;
+    }
+  }
+
+  const days = minD && maxD ? Math.round((maxD - minD) / DAY_MS) + 1 : 0;
+  const stats = [
+    ["rows", rows.length.toLocaleString()],
+    ["date range", `${days} days`],
+    ["first", minD ? dayKey(minD) : "—"],
+    ["last", maxD ? dayKey(maxD) : "—"],
+    ["event types", Object.keys(types).length],
+  ];
+  summaryEl.innerHTML = stats.map(([k, v]) =>
+    `<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`
+  ).join("");
+  summaryEl.classList.remove("hidden");
+
+  if (file) {
+    const savedSuffix = file.saved && file.savedAt ? ` · saved ${formatDateTime(file.savedAt)}` : "";
+    fileMetaEl.textContent = `${file.name} · ${rows.length.toLocaleString()} rows${savedSuffix}`;
+    fileMetaEl.classList.remove("hidden");
+  }
+
+  updateActions();
+
+  chartsEl.classList.remove("hidden");
+
+  renderGrowth(rows, "Weight", "[Growth] Weight", "[Growth] Weight Unit", birth, sex, "weight");
+  renderGrowth(rows, "Height", "[Growth] Height", "[Growth] Height Unit", birth, sex, "height");
+  renderGrowth(rows, "Head circumference", "[Growth] Head Size", "[Growth] Head Size Unit", birth, sex, "head");
+  renderSleepPerDay(rows);
+  renderFeedVolumePerDay(rows);
+  renderDiapersPerDay(rows);
+
+  renderHourHeatmap(rows, "Diaper events by hour of day", r => r.Type === "Diaper" ? 1 : 0);
+  renderHourHeatmap(rows, "Bottle feeds by hour of day", r => r.Type === "Bottle Feed" ? 1 : 0);
+  renderSleepHeatmap(rows);
+  renderHourHeatmap(rows, "Solid meals by hour of day", r => r.Type === "Solid Feed" ? 1 : 0);
+
+  renderFoodTimeline(rows);
+  renderCaregiverSplit(rows);
+  renderFeedIntervals(rows, birth);
+}
+
+function makeCard(title, opts = {}) {
+  const { wide = false, tall = false, sub = "" } = opts;
+  const card = document.createElement("div");
+  card.className = "card" + (wide ? " wide" : "");
+  card.innerHTML = `<h2>${title}${sub ? ` <span class="sub">${sub}</span>` : ""}</h2><div class="chart-wrap${tall ? " tall" : ""}"><canvas></canvas></div>`;
+  chartsEl.appendChild(card);
+  return card.querySelector("canvas");
+}
+
+// ---------- growth with WHO reference bands ----------
+// Canonical units: kg for weight, cm for height + head circumference. Incoming
+// IN/LB values are converted so Ava's series shares units with the WHO bands.
+const METRIC_UNIT = { weight: "kg", height: "cm", head: "cm" };
+function toMetric(metric, value, unit) {
+  const u = (unit || "").toUpperCase();
+  if (metric === "weight" && u === "LB") return value * 0.45359237;
+  if (metric === "weight" && u === "OZ") return value * 0.0283495231;
+  if ((metric === "height" || metric === "head") && u === "IN") return value * 2.54;
+  return value;
+}
+
+function renderGrowth(rows, title, valCol, unitCol, birth, sex, metric) {
+  const pts = [];
+  const srcUnits = new Set();
+  for (const r of rows) {
+    const v = num(r[valCol]);
+    const d = parseDate(r["Start Date/time"]);
+    if (v == null || !d) continue;
+    const u = r[unitCol] || "";
+    pts.push({ x: d, y: toMetric(metric, v, u) });
+    if (u) srcUnits.add(u.toUpperCase());
+  }
+  pts.sort((a, b) => a.x - b.x);
+  const unit = METRIC_UNIT[metric];
+  const converted = [...srcUnits].filter(u => u && u !== unit.toUpperCase());
+  const sexKey = (sex || "").toUpperCase();
+  const whoSex = sexKey === "MALE" ? "boy" : sexKey === "FEMALE" ? "girl" : null;
+  const whoAvailable = whoSex && birth && WHO[whoSex] && WHO[whoSex][metric];
+  const subBits = [];
+  if (whoAvailable) subBits.push(`WHO ${whoSex} bands (approx)`);
+  if (converted.length) subBits.push(`converted from ${converted.join("/")}`);
+  const canvas = makeCard(`${title} over time (${unit})`, { sub: subBits.join(" · ") });
+  if (!pts.length) {
+    canvas.parentElement.innerHTML = '<div class="empty">No data</div>';
+    return;
+  }
+
+  const datasets = [];
+  if (whoAvailable) {
+    const bands = buildPercentileBands(birth, WHO[whoSex][metric], pts[pts.length - 1].x);
+    const outer = "rgba(203,213,224,.35)";
+    const inner = "rgba(160,174,192,.35)";
+    datasets.push(
+      { label: "_p97", data: bands.p97, borderColor: "rgba(203,213,224,.6)", backgroundColor: "rgba(0,0,0,0)", pointRadius: 0, borderWidth: 1, tension: 0.3 },
+      { label: "p85", data: bands.p85, borderColor: "rgba(160,174,192,.6)", backgroundColor: outer, fill: "-1", pointRadius: 0, borderWidth: 1, tension: 0.3 },
+      { label: "_p50_band_hi", data: bands.p50, borderColor: "rgba(0,0,0,0)", backgroundColor: inner, fill: "-1", pointRadius: 0, borderWidth: 0, tension: 0.3 },
+      { label: "_p15_band", data: bands.p15, borderColor: "rgba(0,0,0,0)", backgroundColor: inner, fill: "-1", pointRadius: 0, borderWidth: 0, tension: 0.3 },
+      { label: "p3",  data: bands.p3,  borderColor: "rgba(203,213,224,.6)", backgroundColor: outer, fill: "-1", pointRadius: 0, borderWidth: 1, tension: 0.3 },
+      { label: "p50", data: bands.p50, borderColor: "rgba(74,85,104,.85)", backgroundColor: "rgba(0,0,0,0)", pointRadius: 0, borderWidth: 1.5, borderDash: [4, 4], tension: 0.3 },
+    );
+  }
+  datasets.push({
+    label: "measurements",
+    data: pts,
+    borderColor: "#2b6cb0",
+    backgroundColor: "#2b6cb0",
+    tension: 0.2,
+    pointRadius: 3,
+    borderWidth: 2,
+    order: -1,
+  });
+
+  activeCharts.push(new Chart(canvas, {
+    type: "line",
+    data: { datasets },
+    options: chartOpts({ yLabel: unit, time: true, legend: true, legendFilter: l => !l.text.startsWith("_") }),
+  }));
+}
+
+function buildPercentileBands(birth, table, lastDate) {
+  // table is array of [monthIndex, p3, p15, p50, p85, p97]
+  const addMonths = (d, m) => {
+    const nd = new Date(d);
+    nd.setMonth(nd.getMonth() + m);
+    return nd;
+  };
+  const res = { p3: [], p15: [], p50: [], p85: [], p97: [] };
+  const maxM = Math.min(table.length - 1, Math.ceil((lastDate - birth) / (30.4375 * DAY_MS)) + 1);
+  for (let m = 0; m <= maxM; m++) {
+    const x = addMonths(birth, m);
+    const [, p3, p15, p50, p85, p97] = table[m];
+    res.p3.push({ x, y: p3 });
+    res.p15.push({ x, y: p15 });
+    res.p50.push({ x, y: p50 });
+    res.p85.push({ x, y: p85 });
+    res.p97.push({ x, y: p97 });
+  }
+  return res;
+}
+
+function renderSleepPerDay(rows) {
+  const pts = groupByDay(rows, r => {
+    if (r.Type !== "Sleep") return null;
+    const s = num(r["[Sleep] Duration (Seconds)"]);
+    return s == null ? null : s / 3600;
+  });
+  const canvas = makeCard("Sleep per day (hours)");
+  if (!pts.length) { canvas.parentElement.innerHTML = '<div class="empty">No data</div>'; return; }
+  activeCharts.push(new Chart(canvas, {
+    type: "bar",
+    data: { datasets: [{ data: pts, backgroundColor: "#5a8dd6" }] },
+    options: chartOpts({ yLabel: "hours", time: true }),
+  }));
+}
+
+function renderFeedVolumePerDay(rows) {
+  const byDay = (getVal) => {
+    const m = new Map();
+    for (const r of rows) {
+      const d = parseDate(r["Start Date/time"]);
+      if (!d) continue;
+      const v = getVal(r);
+      if (v == null) continue;
+      const k = dayKey(d);
+      m.set(k, (m.get(k) || 0) + v);
+    }
+    return m;
+  };
+  const milk = byDay(r => num(r["[Bottle Feed] Breast Milk Volume"]));
+  const form = byDay(r => num(r["[Bottle Feed] Formula Volume"]));
+  const keys = [...new Set([...milk.keys(), ...form.keys()])].sort();
+  const canvas = makeCard("Bottle feed volume per day (mL)");
+  if (!keys.length) { canvas.parentElement.innerHTML = '<div class="empty">No data</div>'; return; }
+  activeCharts.push(new Chart(canvas, {
+    type: "bar",
+    data: {
+      datasets: [
+        { label: "breast milk", data: keys.map(k => ({ x: k, y: milk.get(k) || 0 })), backgroundColor: "#2b6cb0" },
+        { label: "formula",     data: keys.map(k => ({ x: k, y: form.get(k) || 0 })), backgroundColor: "#d69e2e" },
+      ],
+    },
+    options: chartOpts({ yLabel: "mL", time: true, stacked: true, legend: true }),
+  }));
+}
+
+function renderDiapersPerDay(rows) {
+  const cats = ["Wet", "Dirty", "Dirty Wet", "Dry"];
+  const colors = { "Wet": "#3182ce", "Dirty": "#975a16", "Dirty Wet": "#805ad5", "Dry": "#a0aec0" };
+  const byDayCat = new Map();
+  for (const r of rows) {
+    if (r.Type !== "Diaper") continue;
+    const d = parseDate(r["Start Date/time"]);
+    const c = r["[Diaper] Type"];
+    if (!d || !c) continue;
+    const k = dayKey(d);
+    if (!byDayCat.has(k)) byDayCat.set(k, {});
+    byDayCat.get(k)[c] = (byDayCat.get(k)[c] || 0) + 1;
+  }
+  const keys = [...byDayCat.keys()].sort();
+  const canvas = makeCard("Diaper changes per day");
+  if (!keys.length) { canvas.parentElement.innerHTML = '<div class="empty">No data</div>'; return; }
+  activeCharts.push(new Chart(canvas, {
+    type: "bar",
+    data: {
+      datasets: cats.map(c => ({
+        label: c.toLowerCase(),
+        data: keys.map(k => ({ x: k, y: byDayCat.get(k)[c] || 0 })),
+        backgroundColor: colors[c],
+      })),
+    },
+    options: chartOpts({ yLabel: "count", time: true, stacked: true, legend: true }),
+  }));
+}
+
+// ---------- hour-of-day × date heatmap ----------
+function renderHourHeatmap(rows, title, getWeight) {
+  const buckets = new Map();
+  let minD = null, maxD = null;
+  for (const r of rows) {
+    const w = getWeight(r);
+    if (!w) continue;
+    const d = parseDate(r["Start Date/time"]);
+    if (!d) continue;
+    const k = dayKey(d);
+    const h = d.getHours();
+    buckets.set(`${k}|${h}`, (buckets.get(`${k}|${h}`) || 0) + w);
+    if (!minD || d < minD) minD = d;
+    if (!maxD || d > maxD) maxD = d;
+  }
+  const canvas = makeCard(title, { wide: true, tall: true });
+  if (!buckets.size) { canvas.parentElement.innerHTML = '<div class="empty">No data</div>'; return; }
+
+  const data = [];
+  let max = 0;
+  for (const [key, v] of buckets) {
+    const [d, h] = key.split("|");
+    data.push({ x: d, y: +h, v });
+    if (v > max) max = v;
+  }
+  const totalDays = Math.max(1, Math.round((maxD - minD) / DAY_MS) + 1);
+
+  activeCharts.push(new Chart(canvas, {
+    type: "matrix",
+    data: {
+      datasets: [{
+        data,
+        backgroundColor: ctx => heatColor(ctx.raw.v / (max || 1)),
+        borderWidth: 0,
+        width: ({ chart }) => Math.max(1, (chart.chartArea || {}).width / totalDays),
+        height: ({ chart }) => ((chart.chartArea || {}).height || 0) / 24,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: items => items[0].raw.x,
+            label: item => `${String(item.raw.y).padStart(2, "0")}:00 — ${item.raw.v}`,
+          },
+        },
+      },
+      scales: {
+        x: { type: "time", time: { unit: "month", tooltipFormat: "yyyy-MM-dd" }, grid: { display: false } },
+        y: {
+          type: "linear", min: -0.5, max: 23.5, reverse: true,
+          ticks: { stepSize: 3, callback: v => `${String(v).padStart(2, "0")}:00` },
+          grid: { display: false },
+        },
+      },
+    },
+  }));
+}
+
+function renderSleepHeatmap(rows) {
+  const buckets = new Map();
+  let minD = null, maxD = null;
+  for (const r of rows) {
+    if (r.Type !== "Sleep") continue;
+    const start = parseDate(r["Start Date/time"]);
+    const end = parseDate(r["[Sleep] End Date/time"]);
+    const dur = num(r["[Sleep] Duration (Seconds)"]);
+    if (!start || (!end && !dur)) continue;
+    const stop = end || new Date(start.getTime() + dur * 1000);
+    let t = new Date(start);
+    while (t < stop) {
+      const nextHour = new Date(t);
+      nextHour.setMinutes(0, 0, 0);
+      nextHour.setHours(nextHour.getHours() + 1);
+      const segEnd = nextHour < stop ? nextHour : stop;
+      const frac = (segEnd - t) / 3600000;
+      const k = dayKey(t);
+      const h = t.getHours();
+      buckets.set(`${k}|${h}`, (buckets.get(`${k}|${h}`) || 0) + frac);
+      if (!minD || t < minD) minD = new Date(t);
+      if (!maxD || t > maxD) maxD = new Date(t);
+      t = segEnd;
+    }
+  }
+  const canvas = makeCard("Sleep by hour of day", { wide: true, tall: true, sub: "fraction of hour asleep" });
+  if (!buckets.size) { canvas.parentElement.innerHTML = '<div class="empty">No data</div>'; return; }
+  const data = [];
+  for (const [key, v] of buckets) {
+    const [d, h] = key.split("|");
+    data.push({ x: d, y: +h, v });
+  }
+  const totalDays = Math.max(1, Math.round((maxD - minD) / DAY_MS) + 1);
+  activeCharts.push(new Chart(canvas, {
+    type: "matrix",
+    data: {
+      datasets: [{
+        data,
+        backgroundColor: ctx => heatColor(ctx.raw.v, "sleep"),
+        borderWidth: 0,
+        width: ({ chart }) => Math.max(1, (chart.chartArea || {}).width / totalDays),
+        height: ({ chart }) => ((chart.chartArea || {}).height || 0) / 24,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: items => items[0].raw.x,
+            label: item => `${String(item.raw.y).padStart(2, "0")}:00 — ${(item.raw.v * 100).toFixed(0)}% asleep`,
+          },
+        },
+      },
+      scales: {
+        x: { type: "time", time: { unit: "month", tooltipFormat: "yyyy-MM-dd" }, grid: { display: false } },
+        y: {
+          type: "linear", min: -0.5, max: 23.5, reverse: true,
+          ticks: { stepSize: 3, callback: v => `${String(v).padStart(2, "0")}:00` },
+          grid: { display: false },
+        },
+      },
+    },
+  }));
+}
+
+function heatColor(t, palette = "blue") {
+  const x = Math.max(0, Math.min(1, t));
+  if (palette === "sleep") {
+    // indigo scale
+    const r = Math.round(247 - 187 * x);
+    const g = Math.round(247 - 188 * x);
+    const b = Math.round(247 - 127 * x);
+    return `rgb(${r},${g},${b})`;
+  }
+  const r = Math.round(247 - 204 * x);
+  const g = Math.round(247 - 139 * x);
+  const b = Math.round(245 - 69 * x);
+  return `rgb(${r},${g},${b})`;
+}
+
+// ---------- food introduction timeline ----------
+function renderFoodTimeline(rows) {
+  // Parse multi-line Food column; entries look like "Banana" or "Egg: foodCategoryKey=PROTEIN".
+  const firstSeen = new Map(); // foodName -> { date, category }
+  for (const r of rows) {
+    if (r.Type !== "Solid Feed") continue;
+    const foodCell = r["[Solid Feed] Food"];
+    if (!foodCell) continue;
+    const d = parseDate(r["Start Date/time"]);
+    if (!d) continue;
+    for (const line of foodCell.split(/\r?\n/)) {
+      const name = line.split(":")[0].trim();
+      if (!name) continue;
+      const catMatch = line.match(/foodCategoryKey=([A-Z]+)/);
+      const category = catMatch ? catMatch[1] : "OTHER";
+      const prev = firstSeen.get(name);
+      if (!prev || d < prev.date) firstSeen.set(name, { date: d, category });
+    }
+  }
+  const catColors = {
+    FRUIT: "#e53e3e", VEGETABLE: "#38a169", PROTEIN: "#d69e2e",
+    GRAIN: "#975a16", DAIRY: "#3182ce", OTHER: "#718096",
+  };
+  const cats = Object.keys(catColors);
+  const datasets = cats.map(cat => ({
+    label: cat.toLowerCase(),
+    data: [],
+    backgroundColor: catColors[cat],
+    pointRadius: 6,
+    pointHoverRadius: 8,
+  }));
+  const lane = { FRUIT: 5, VEGETABLE: 4, PROTEIN: 3, GRAIN: 2, DAIRY: 1, OTHER: 0 };
+  for (const [name, { date, category }] of firstSeen) {
+    const ds = datasets[cats.indexOf(category)] || datasets[cats.indexOf("OTHER")];
+    ds.data.push({ x: date, y: lane[category] + (Math.random() - 0.5) * 0.6, label: name });
+  }
+  const canvas = makeCard("First time trying each food", { wide: true, sub: `${firstSeen.size} foods` });
+  if (!firstSeen.size) { canvas.parentElement.innerHTML = '<div class="empty">No data</div>'; return; }
+  activeCharts.push(new Chart(canvas, {
+    type: "scatter",
+    data: { datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: "bottom", labels: { boxWidth: 12 } },
+        tooltip: {
+          callbacks: {
+            label: item => `${item.raw.label} — ${dayKey(new Date(item.raw.x))}`,
+          },
+        },
+      },
+      scales: {
+        x: { type: "time", time: { unit: "month", tooltipFormat: "yyyy-MM-dd" }, grid: { color: "#eee" } },
+        y: {
+          min: -0.8, max: 5.8,
+          ticks: {
+            stepSize: 1,
+            callback: v => ({ 0: "other", 1: "dairy", 2: "grain", 3: "protein", 4: "veg", 5: "fruit" }[v] || ""),
+          },
+          grid: { color: "#eee" },
+        },
+      },
+    },
+  }));
+}
+
+// ---------- caregiver split ----------
+function renderCaregiverSplit(rows) {
+  const byCaregiverType = new Map(); // caregiver -> Map(type -> count)
+  const typeSet = new Set();
+  for (const r of rows) {
+    const c = r["Created By Caregiver"];
+    if (!c || !r.Type) continue;
+    if (!byCaregiverType.has(c)) byCaregiverType.set(c, new Map());
+    const m = byCaregiverType.get(c);
+    m.set(r.Type, (m.get(r.Type) || 0) + 1);
+    typeSet.add(r.Type);
+  }
+  const topTypes = ["Diaper", "Bottle Feed", "Pump", "Sleep", "Solid Feed"].filter(t => typeSet.has(t));
+  const caregivers = [...byCaregiverType.keys()].sort();
+  const palette = ["#2b6cb0", "#d69e2e", "#38a169", "#805ad5", "#e53e3e", "#0bc5ea", "#718096"];
+  const datasets = caregivers.map((cg, i) => ({
+    label: cg,
+    data: topTypes.map(t => byCaregiverType.get(cg).get(t) || 0),
+    backgroundColor: palette[i % palette.length],
+  }));
+  const canvas = makeCard("Events logged, by caregiver", { sub: "top event types" });
+  if (!caregivers.length || !topTypes.length) { canvas.parentElement.innerHTML = '<div class="empty">No data</div>'; return; }
+  activeCharts.push(new Chart(canvas, {
+    type: "bar",
+    data: { labels: topTypes, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      indexAxis: "y",
+      plugins: { legend: { display: true, position: "bottom", labels: { boxWidth: 12 } } },
+      scales: {
+        x: { stacked: true, grid: { color: "#eee" } },
+        y: { stacked: true, grid: { color: "#eee" } },
+      },
+    },
+  }));
+}
+
+// ---------- bottle feed intervals vs age ----------
+function renderFeedIntervals(rows, birth) {
+  const feeds = rows
+    .filter(r => r.Type === "Bottle Feed")
+    .map(r => parseDate(r["Start Date/time"]))
+    .filter(Boolean)
+    .sort((a, b) => a - b);
+  const pts = [];
+  for (let i = 1; i < feeds.length; i++) {
+    const gap = (feeds[i] - feeds[i - 1]) / 3600000;
+    if (gap > 12) continue; // ignore overnight cross-day gaps where sleep took over
+    const ageDays = birth ? (feeds[i] - birth) / DAY_MS : i;
+    pts.push({ x: ageDays, y: gap });
+  }
+  const canvas = makeCard("Gap between bottle feeds", { sub: "hours, vs age (days)" });
+  if (!pts.length) { canvas.parentElement.innerHTML = '<div class="empty">No data</div>'; return; }
+
+  // 7-day rolling median
+  const byDay = new Map();
+  for (const p of pts) {
+    const k = Math.floor(p.x);
+    if (!byDay.has(k)) byDay.set(k, []);
+    byDay.get(k).push(p.y);
+  }
+  const days = [...byDay.keys()].sort((a, b) => a - b);
+  const median = arr => { const s = [...arr].sort((a, b) => a - b); return s[Math.floor(s.length / 2)]; };
+  const trend = [];
+  const window = 7;
+  for (let i = 0; i < days.length; i++) {
+    const bucket = [];
+    for (let j = Math.max(0, i - window); j <= i; j++) bucket.push(...byDay.get(days[j]));
+    trend.push({ x: days[i], y: median(bucket) });
+  }
+
+  activeCharts.push(new Chart(canvas, {
+    type: "scatter",
+    data: {
+      datasets: [
+        { label: "each gap", data: pts, backgroundColor: "rgba(43,108,176,.25)", pointRadius: 2 },
+        { label: "7-day median", data: trend, type: "line", borderColor: "#d69e2e", backgroundColor: "#d69e2e", pointRadius: 0, borderWidth: 2, tension: 0.3 },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: true, position: "bottom", labels: { boxWidth: 12 } } },
+      scales: {
+        x: { title: { display: true, text: "age (days)" }, grid: { color: "#eee" } },
+        y: { title: { display: true, text: "hours" }, grid: { color: "#eee" }, beginAtZero: true },
+      },
+    },
+  }));
+}
+
+// ---------- pump left vs right ----------
+function renderPumpAsymmetry(rows) {
+  const left = [], right = [];
+  for (const r of rows) {
+    if (r.Type !== "Pump") continue;
+    const d = parseDate(r["Start Date/time"]);
+    if (!d) continue;
+    const l = num(r["[Pump] Left Volume"]);
+    const ri = num(r["[Pump] Right Volume"]);
+    if (l != null) left.push({ x: d, y: l });
+    if (ri != null) right.push({ x: d, y: ri });
+  }
+  // daily means to smooth out per-session noise
+  const meanByDay = arr => {
+    const m = new Map();
+    for (const { x, y } of arr) {
+      const k = dayKey(x);
+      if (!m.has(k)) m.set(k, []);
+      m.get(k).push(y);
+    }
+    return [...m.entries()].sort().map(([k, vs]) => ({ x: k, y: vs.reduce((a, b) => a + b, 0) / vs.length }));
+  };
+  const canvas = makeCard("Pump volume, left vs right", { sub: "daily mean (mL)" });
+  if (!left.length && !right.length) { canvas.parentElement.innerHTML = '<div class="empty">No data</div>'; return; }
+  activeCharts.push(new Chart(canvas, {
+    type: "line",
+    data: {
+      datasets: [
+        { label: "left",  data: meanByDay(left),  borderColor: "#3182ce", backgroundColor: "#3182ce", pointRadius: 0, borderWidth: 1.5, tension: 0.3 },
+        { label: "right", data: meanByDay(right), borderColor: "#d69e2e", backgroundColor: "#d69e2e", pointRadius: 0, borderWidth: 1.5, tension: 0.3 },
+      ],
+    },
+    options: chartOpts({ yLabel: "mL", time: true, legend: true }),
+  }));
+}
+
+// ---------- chart options helper ----------
+function chartOpts({ yLabel = "", time = false, stacked = false, legend = false, legendFilter = null } = {}) {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: legend,
+        position: "bottom",
+        labels: {
+          boxWidth: 12,
+          filter: legendFilter ? (item) => legendFilter(item) : undefined,
+        },
+      },
+      tooltip: { mode: "index", intersect: false },
+    },
+    scales: {
+      x: {
+        type: time ? "time" : "category",
+        time: time ? { unit: "month", tooltipFormat: "yyyy-MM-dd" } : undefined,
+        stacked,
+        grid: { color: "#eee" },
+      },
+      y: {
+        stacked,
+        title: { display: !!yLabel, text: yLabel },
+        grid: { color: "#eee" },
+        beginAtZero: !stacked ? false : true,
+      },
+    },
+  };
+}
+
+// ---------- Approximate growth reference bands ----------
+// Tables: [monthAge, p3, p15, p50, p85, p97]; 0-24 months.
+// For visualization only; not intended for medical use.
+const WHO = {
+  girl: {
+    weight: [
+      [0, 2.4, 2.8, 3.2, 3.7, 4.2],
+      [1, 3.2, 3.6, 4.2, 4.8, 5.5],
+      [2, 4.0, 4.5, 5.1, 5.9, 6.6],
+      [3, 4.6, 5.1, 5.8, 6.6, 7.5],
+      [4, 5.1, 5.6, 6.4, 7.3, 8.2],
+      [5, 5.5, 6.1, 6.9, 7.8, 8.8],
+      [6, 5.8, 6.4, 7.3, 8.3, 9.3],
+      [7, 6.1, 6.7, 7.6, 8.6, 9.8],
+      [8, 6.3, 7.0, 7.9, 9.0, 10.2],
+      [9, 6.6, 7.3, 8.2, 9.3, 10.5],
+      [10, 6.8, 7.5, 8.5, 9.6, 10.9],
+      [11, 7.0, 7.7, 8.7, 9.9, 11.2],
+      [12, 7.1, 7.9, 8.9, 10.1, 11.5],
+      [13, 7.3, 8.1, 9.2, 10.4, 11.8],
+      [14, 7.5, 8.3, 9.4, 10.6, 12.1],
+      [15, 7.7, 8.5, 9.6, 10.9, 12.4],
+      [16, 7.8, 8.7, 9.8, 11.1, 12.6],
+      [17, 8.0, 8.8, 10.0, 11.4, 12.9],
+      [18, 8.2, 9.0, 10.2, 11.6, 13.2],
+      [19, 8.3, 9.2, 10.4, 11.8, 13.5],
+      [20, 8.5, 9.4, 10.6, 12.1, 13.7],
+      [21, 8.7, 9.6, 10.9, 12.3, 14.0],
+      [22, 8.8, 9.7, 11.1, 12.5, 14.3],
+      [23, 9.0, 9.9, 11.3, 12.8, 14.6],
+      [24, 9.2, 10.1, 11.5, 13.0, 14.8],
+    ],
+    height: [
+      [0, 45.6, 47.2, 49.1, 51.0, 52.7],
+      [1, 50.0, 51.7, 53.7, 55.6, 57.4],
+      [2, 53.2, 55.0, 57.1, 59.1, 61.0],
+      [3, 55.8, 57.7, 59.8, 61.9, 63.8],
+      [4, 58.0, 59.9, 62.1, 64.3, 66.2],
+      [5, 59.9, 61.8, 64.0, 66.2, 68.2],
+      [6, 61.5, 63.5, 65.7, 68.0, 70.0],
+      [7, 62.9, 64.9, 67.3, 69.6, 71.6],
+      [8, 64.3, 66.3, 68.7, 71.1, 73.2],
+      [9, 65.6, 67.6, 70.1, 72.6, 74.7],
+      [10, 66.8, 68.9, 71.5, 74.0, 76.2],
+      [11, 68.0, 70.2, 72.8, 75.4, 77.6],
+      [12, 69.2, 71.3, 74.0, 76.7, 79.0],
+      [13, 70.3, 72.5, 75.2, 78.0, 80.3],
+      [14, 71.3, 73.6, 76.4, 79.2, 81.6],
+      [15, 72.4, 74.7, 77.5, 80.4, 82.9],
+      [16, 73.3, 75.7, 78.6, 81.6, 84.1],
+      [17, 74.3, 76.7, 79.7, 82.7, 85.3],
+      [18, 75.2, 77.7, 80.7, 83.8, 86.5],
+      [19, 76.2, 78.7, 81.7, 84.9, 87.6],
+      [20, 77.0, 79.6, 82.7, 85.9, 88.7],
+      [21, 77.9, 80.5, 83.7, 87.0, 89.8],
+      [22, 78.7, 81.4, 84.6, 88.0, 90.8],
+      [23, 79.6, 82.2, 85.5, 88.9, 91.9],
+      [24, 80.3, 83.1, 86.4, 89.9, 92.9],
+    ],
+    head: [
+      [0, 31.7, 32.7, 33.9, 35.1, 36.1],
+      [1, 34.3, 35.4, 36.5, 37.8, 38.8],
+      [2, 36.0, 37.1, 38.3, 39.5, 40.5],
+      [3, 37.2, 38.3, 39.5, 40.8, 41.9],
+      [4, 38.2, 39.3, 40.6, 41.9, 43.0],
+      [5, 39.0, 40.2, 41.5, 42.8, 43.9],
+      [6, 39.7, 40.9, 42.2, 43.5, 44.6],
+      [7, 40.4, 41.5, 42.8, 44.1, 45.3],
+      [8, 40.9, 42.0, 43.4, 44.7, 45.9],
+      [9, 41.3, 42.5, 43.8, 45.2, 46.3],
+      [10, 41.7, 42.9, 44.2, 45.6, 46.8],
+      [11, 42.0, 43.2, 44.6, 45.9, 47.1],
+      [12, 42.3, 43.5, 44.9, 46.3, 47.5],
+      [13, 42.6, 43.8, 45.2, 46.6, 47.8],
+      [14, 42.9, 44.1, 45.4, 46.8, 48.0],
+      [15, 43.1, 44.3, 45.7, 47.1, 48.3],
+      [16, 43.3, 44.5, 45.9, 47.3, 48.5],
+      [17, 43.5, 44.7, 46.1, 47.5, 48.7],
+      [18, 43.6, 44.9, 46.2, 47.7, 48.9],
+      [19, 43.8, 45.0, 46.4, 47.8, 49.1],
+      [20, 44.0, 45.2, 46.6, 48.0, 49.3],
+      [21, 44.1, 45.3, 46.7, 48.2, 49.4],
+      [22, 44.2, 45.5, 46.9, 48.3, 49.6],
+      [23, 44.4, 45.6, 47.0, 48.5, 49.7],
+      [24, 44.5, 45.7, 47.2, 48.6, 49.9],
+    ],
+  },
+  boy: {
+    weight: [
+      [0, 2.5, 2.9, 3.3, 3.9, 4.4],
+      [1, 3.4, 3.9, 4.5, 5.1, 5.8],
+      [2, 4.3, 4.9, 5.6, 6.3, 7.1],
+      [3, 5.0, 5.6, 6.4, 7.2, 8.0],
+      [4, 5.6, 6.2, 7.0, 7.9, 8.7],
+      [5, 6.0, 6.7, 7.5, 8.4, 9.3],
+      [6, 6.4, 7.1, 7.9, 8.9, 9.8],
+      [7, 6.7, 7.4, 8.3, 9.3, 10.3],
+      [8, 6.9, 7.7, 8.6, 9.6, 10.7],
+      [9, 7.1, 7.9, 8.9, 9.9, 11.0],
+      [10, 7.4, 8.2, 9.2, 10.2, 11.4],
+      [11, 7.6, 8.4, 9.4, 10.5, 11.7],
+      [12, 7.7, 8.6, 9.6, 10.8, 12.0],
+      [13, 7.9, 8.8, 9.9, 11.0, 12.3],
+      [14, 8.1, 9.0, 10.1, 11.3, 12.6],
+      [15, 8.3, 9.2, 10.3, 11.5, 12.8],
+      [16, 8.4, 9.4, 10.5, 11.7, 13.1],
+      [17, 8.6, 9.6, 10.7, 12.0, 13.4],
+      [18, 8.8, 9.8, 10.9, 12.2, 13.7],
+      [19, 8.9, 9.9, 11.1, 12.5, 13.9],
+      [20, 9.1, 10.1, 11.3, 12.7, 14.2],
+      [21, 9.2, 10.3, 11.5, 12.9, 14.5],
+      [22, 9.4, 10.5, 11.8, 13.2, 14.7],
+      [23, 9.5, 10.6, 12.0, 13.4, 15.0],
+      [24, 9.7, 10.8, 12.2, 13.6, 15.3],
+    ],
+    height: [
+      [0, 46.3, 48.0, 49.9, 51.8, 53.4],
+      [1, 51.1, 52.8, 54.7, 56.7, 58.4],
+      [2, 54.7, 56.4, 58.4, 60.5, 62.2],
+      [3, 57.6, 59.4, 61.4, 63.5, 65.3],
+      [4, 60.0, 61.8, 63.9, 66.0, 67.8],
+      [5, 61.9, 63.8, 65.9, 68.1, 69.9],
+      [6, 63.6, 65.5, 67.6, 69.8, 71.6],
+      [7, 65.1, 67.0, 69.2, 71.4, 73.3],
+      [8, 66.5, 68.4, 70.6, 72.9, 74.8],
+      [9, 67.7, 69.7, 72.0, 74.3, 76.2],
+      [10, 69.0, 71.0, 73.3, 75.6, 77.6],
+      [11, 70.2, 72.2, 74.5, 76.9, 78.9],
+      [12, 71.3, 73.4, 75.7, 78.1, 80.2],
+      [13, 72.4, 74.5, 76.9, 79.3, 81.4],
+      [14, 73.4, 75.6, 78.0, 80.5, 82.6],
+      [15, 74.4, 76.6, 79.1, 81.7, 83.8],
+      [16, 75.4, 77.6, 80.2, 82.8, 85.0],
+      [17, 76.3, 78.6, 81.2, 83.9, 86.1],
+      [18, 77.2, 79.6, 82.3, 85.0, 87.3],
+      [19, 78.1, 80.5, 83.2, 86.0, 88.4],
+      [20, 78.9, 81.4, 84.2, 87.0, 89.5],
+      [21, 79.7, 82.3, 85.1, 88.0, 90.5],
+      [22, 80.5, 83.1, 86.0, 89.0, 91.6],
+      [23, 81.3, 83.9, 86.9, 89.9, 92.6],
+      [24, 82.1, 84.8, 87.8, 90.9, 93.6],
+    ],
+    head: [
+      [0, 32.1, 33.2, 34.5, 35.7, 36.9],
+      [1, 34.9, 36.1, 37.3, 38.5, 39.6],
+      [2, 36.8, 38.0, 39.1, 40.3, 41.5],
+      [3, 38.1, 39.3, 40.5, 41.7, 42.9],
+      [4, 39.2, 40.4, 41.6, 42.8, 44.0],
+      [5, 40.1, 41.3, 42.6, 43.8, 44.9],
+      [6, 40.9, 42.1, 43.3, 44.6, 45.7],
+      [7, 41.5, 42.7, 44.0, 45.2, 46.4],
+      [8, 42.0, 43.3, 44.5, 45.8, 47.0],
+      [9, 42.5, 43.7, 45.0, 46.3, 47.5],
+      [10, 42.9, 44.1, 45.4, 46.7, 47.9],
+      [11, 43.2, 44.5, 45.8, 47.0, 48.3],
+      [12, 43.5, 44.8, 46.1, 47.4, 48.6],
+      [13, 43.8, 45.0, 46.3, 47.6, 48.9],
+      [14, 44.0, 45.3, 46.6, 47.9, 49.1],
+      [15, 44.2, 45.5, 46.8, 48.1, 49.4],
+      [16, 44.4, 45.7, 47.0, 48.3, 49.6],
+      [17, 44.6, 45.8, 47.2, 48.5, 49.8],
+      [18, 44.7, 46.0, 47.4, 48.7, 50.0],
+      [19, 44.9, 46.2, 47.5, 48.9, 50.2],
+      [20, 45.0, 46.3, 47.7, 49.0, 50.3],
+      [21, 45.2, 46.4, 47.8, 49.2, 50.5],
+      [22, 45.3, 46.6, 48.0, 49.3, 50.6],
+      [23, 45.4, 46.7, 48.1, 49.4, 50.8],
+      [24, 45.5, 46.8, 48.2, 49.6, 50.9],
+    ],
+  },
+};
+
+loadSavedResults();
+updateActions();
+</script>
+</body>
+</html>
