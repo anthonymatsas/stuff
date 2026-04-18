@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive 3D Spine Model</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&family=Sora:wght@300;400;600;700&display=swap');
+
+  :root {
+    --bg: #0a0c10;
+    --surface: #12151c;
+    --surface2: #1a1e28;
+    --border: #2a2f3d;
+    --text: #e8eaf0;
+    --text-dim: #8890a4;
+    --accent: #4ecdc4;
+    --accent2: #ff6b6b;
+    --warn: #ffd93d;
+    --cervical: #45b7d1;
+    --thoracic: #96ceb4;
+    --lumbar: #ffeaa7;
+    --sacral: #dda0dd;
+    --disc-healthy: #4ecdc4;
+    --disc-compressed: #ff6b6b;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: 'Sora', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  #canvas-container {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+
+  canvas { display: block; }
+
+  .ui-overlay {
+    position: absolute;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  .ui-overlay > * { pointer-events: auto; }
+
+  .panel {
+    background: rgba(18, 21, 28, 0.92);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px;
+  }
+
+  /* Top bar */
+  .top-bar {
+    top: 16px; left: 16px; right: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .title-area {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .title-area h1 {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+  }
+
+  .title-area .badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    background: var(--accent);
+    color: var(--bg);
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-weight: 500;
+  }
+
+  /* Posture controls */
+  .posture-panel {
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 700px;
+  }
+
+  .posture-btn {
+    font-family: 'Sora', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 10px 18px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-dim);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+  }
+
+  .posture-btn:hover {
+    border-color: var(--accent);
+    color: var(--text);
+    background: var(--surface2);
+  }
+
+  .posture-btn.active {
+    border-color: var(--accent);
+    background: rgba(78, 205, 196, 0.15);
+    color: var(--accent);
+    box-shadow: 0 0 20px rgba(78, 205, 196, 0.1);
+  }
+
+  /* Info panel */
+  .info-panel {
+    top: 80px;
+    right: 16px;
+    width: 280px;
+  }
+
+  .info-panel h3 {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .disc-info {
+    margin-bottom: 14px;
+  }
+
+  .disc-info-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 4px;
+  }
+
+  .pressure-bar {
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 2px;
+  }
+
+  .pressure-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.8s ease, background 0.8s ease;
+  }
+
+  .pressure-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    text-align: right;
+  }
+
+  .legend {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .posture-desc {
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text-dim);
+    margin-bottom: 14px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .instructions {
+    bottom: 90px;
+    left: 16px;
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1.8;
+    opacity: 0.7;
+  }
+
+  .load-label {
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+</style>
+</head>
+<body>
+
+<div id="canvas-container"></div>
+
+<!-- Top bar -->
+<div class="ui-overlay top-bar">
+  <div class="panel title-area">
+    <h1>Spinal Biomechanics</h1>
+    <span class="badge">3D INTERACTIVE</span>
+  </div>
+</div>
+
+<!-- Posture buttons -->
+<div class="ui-overlay posture-panel panel" id="posture-panel">
+  <button class="posture-btn active" data-posture="standing">Standing</button>
+  <button class="posture-btn" data-posture="sitting">Sitting Upright</button>
+  <button class="posture-btn" data-posture="slouching">Slouching</button>
+  <button class="posture-btn" data-posture="bending">Bending Forward</button>
+  <button class="posture-btn" data-posture="extension">Extension (Back)</button>
+  <button class="posture-btn" data-posture="lateral">Lateral Bend</button>
+  <button class="posture-btn" data-posture="lifting">Lifting Heavy</button>
+  <button class="posture-btn" data-posture="supine">Lying Supine</button>
+</div>
+
+<!-- Info panel -->
+<div class="ui-overlay info-panel panel" id="info-panel">
+  <div class="posture-desc" id="posture-desc">
+    Normal standing posture. The spine maintains its natural S-curve with balanced disc loading. Intradiscal pressure is moderate at ~100% baseline.
+  </div>
+  <h3>Disc Pressure</h3>
+  <div class="load-label" id="load-label">Relative Intradiscal Pressure</div>
+  <div id="disc-bars"></div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--cervical)"></div> Cervical (C1–C7)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--thoracic)"></div> Thoracic (T1–T12)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--lumbar)"></div> Lumbar (L1–L5)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--sacral)"></div> Sacrum & Coccyx</div>
+  </div>
+</div>
+
+<!-- Instructions -->
+<div class="ui-overlay instructions panel" id="instructions">
+  drag to rotate · scroll to zoom<br>
+  click a posture to simulate
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ── SCENE SETUP ──
+const container = document.getElementById('canvas-container');
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 1000);
+camera.position.set(0, 5, 18);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setClearColor(0x0a0c10, 1);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+container.appendChild(renderer.domElement);
+
+// Lights
+const ambientLight = new THREE.AmbientLight(0x404060, 0.6);
+scene.add(ambientLight);
+
+const mainLight = new THREE.DirectionalLight(0xffffff, 0.9);
+mainLight.position.set(5, 10, 8);
+mainLight.castShadow = true;
+scene.add(mainLight);
+
+const fillLight = new THREE.DirectionalLight(0x4ecdc4, 0.3);
+fillLight.position.set(-5, 3, -5);
+scene.add(fillLight);
+
+const rimLight = new THREE.PointLight(0xff6b6b, 0.4, 30);
+rimLight.position.set(-4, 8, -6);
+scene.add(rimLight);
+
+// ── ANATOMICAL DATA ──
+// Vertebrae definitions: name, region, height, widthX, widthZ, yPos
+// Based on anatomical proportions. Y=0 at S1 base.
+// Real spine is ~70cm from C1 to coccyx tip.
+// We scale: 1 unit ≈ 1 cm approximately
+
+const regions = {
+  cervical: 0x45b7d1,
+  thoracic: 0x96ceb4,
+  lumbar:   0xffeaa7,
+  sacral:   0xdda0dd
+};
+
+// Vertebral body approximate dimensions (height cm, AP diameter cm, lateral diameter cm)
+// and cumulative Y position from bottom
+const vertebraeData = [
+  // Sacrum + Coccyx (fused, modeled as single pieces)
+  { name:'Coccyx', region:'sacral', h:2.0, wx:1.8, wz:1.4, y:0 },
+  { name:'S5',region:'sacral',h:1.0,wx:2.8,wz:2.2,y:2.2 },
+  { name:'S4',region:'sacral',h:1.2,wx:3.0,wz:2.4,y:3.4 },
+  { name:'S3',region:'sacral',h:1.3,wx:3.4,wz:2.6,y:4.8 },
+  { name:'S2',region:'sacral',h:1.4,wx:3.8,wz:2.8,y:6.3 },
+  { name:'S1',region:'sacral',h:1.5,wx:4.2,wz:3.0,y:7.9 },
+  // Lumbar
+  { name:'L5',region:'lumbar',h:1.8,wx:3.8,wz:2.8,y:10.0 },
+  { name:'L4',region:'lumbar',h:1.7,wx:3.6,wz:2.7,y:12.2 },
+  { name:'L3',region:'lumbar',h:1.7,wx:3.4,wz:2.6,y:14.3 },
+  { name:'L2',region:'lumbar',h:1.6,wx:3.2,wz:2.5,y:16.3 },
+  { name:'L1',region:'lumbar',h:1.6,wx:3.0,wz:2.4,y:18.2 },
+  // Thoracic
+  { name:'T12',region:'thoracic',h:1.5,wx:2.8,wz:2.3,y:20.1 },
+  { name:'T11',region:'thoracic',h:1.4,wx:2.6,wz:2.2,y:21.8 },
+  { name:'T10',region:'thoracic',h:1.3,wx:2.5,wz:2.1,y:23.4 },
+  { name:'T9',region:'thoracic',h:1.3,wx:2.4,wz:2.0,y:24.9 },
+  { name:'T8',region:'thoracic',h:1.3,wx:2.3,wz:2.0,y:26.4 },
+  { name:'T7',region:'thoracic',h:1.2,wx:2.2,wz:1.9,y:27.8 },
+  { name:'T6',region:'thoracic',h:1.2,wx:2.2,wz:1.9,y:29.2 },
+  { name:'T5',region:'thoracic',h:1.2,wx:2.1,wz:1.8,y:30.5 },
+  { name:'T4',region:'thoracic',h:1.1,wx:2.0,wz:1.8,y:31.8 },
+  { name:'T3',region:'thoracic',h:1.1,wx:2.0,wz:1.7,y:33.0 },
+  { name:'T2',region:'thoracic',h:1.1,wx:2.0,wz:1.7,y:34.2 },
+  { name:'T1',region:'thoracic',h:1.1,wx:2.0,wz:1.7,y:35.4 },
+  // Cervical
+  { name:'C7',region:'cervical',h:1.0,wx:2.0,wz:1.6,y:36.7 },
+  { name:'C6',region:'cervical',h:0.9,wx:1.8,wz:1.5,y:37.9 },
+  { name:'C5',region:'cervical',h:0.9,wx:1.7,wz:1.4,y:39.0 },
+  { name:'C4',region:'cervical',h:0.9,wx:1.6,wz:1.4,y:40.0 },
+  { name:'C3',region:'cervical',h:0.9,wx:1.6,wz:1.3,y:41.0 },
+  { name:'C2',region:'cervical',h:1.2,wx:1.8,wz:1.6,y:42.1 },// Axis
+  { name:'C1',region:'cervical',h:1.0,wx:2.2,wz:2.0,y:43.5 },// Atlas (wider, ring-like)
+];
+
+const SCALE = 0.28; // Scale everything down to fit nicely in scene
+
+// ── BUILD SPINE ──
+const spineGroup = new THREE.Group();
+scene.add(spineGroup);
+
+const vertebraMeshes = [];
+const discMeshes = [];
+const spinousProcesses = [];
+
+// Natural curvature offsets (AP direction = Z axis)
+// Lordosis (cervical, lumbar) = anterior convex = +Z shift
+// Kyphosis (thoracic, sacral) = posterior convex = -Z shift
+function getNaturalOffset(v) {
+  const n = v.name;
+  // Cervical lordosis
+  if (n === 'C1') return { z: 0.8, rx: -0.05 };
+  if (n === 'C2') return { z: 0.7, rx: -0.04 };
+  if (n === 'C3') return { z: 0.5, rx: -0.03 };
+  if (n === 'C4') return { z: 0.35, rx: -0.02 };
+  if (n === 'C5') return { z: 0.2, rx: -0.01 };
+  if (n === 'C6') return { z: 0.1, rx: 0 };
+  if (n === 'C7') return { z: 0, rx: 0.01 };
+  // Thoracic kyphosis
+  if (n === 'T1') return { z: -0.1, rx: 0.02 };
+  if (n === 'T2') return { z: -0.25, rx: 0.025 };
+  if (n === 'T3') return { z: -0.4, rx: 0.03 };
+  if (n === 'T4') return { z: -0.55, rx: 0.03 };
+  if (n === 'T5') return { z: -0.7, rx: 0.03 };
+  if (n === 'T6') return { z: -0.8, rx: 0.025 };
+  if (n === 'T7') return { z: -0.85, rx: 0.02 };
+  if (n === 'T8') return { z: -0.85, rx: 0.015 };
+  if (n === 'T9') return { z: -0.8, rx: 0.01 };
+  if (n === 'T10') return { z: -0.7, rx: 0.005 };
+  if (n === 'T11') return { z: -0.55, rx: 0 };
+  if (n === 'T12') return { z: -0.35, rx: -0.01 };
+  // Lumbar lordosis
+  if (n === 'L1') return { z: -0.15, rx: -0.02 };
+  if (n === 'L2') return { z: 0.05, rx: -0.03 };
+  if (n === 'L3') return { z: 0.2, rx: -0.035 };
+  if (n === 'L4') return { z: 0.3, rx: -0.03 };
+  if (n === 'L5') return { z: 0.25, rx: -0.02 };
+  // Sacrum kyphosis
+  if (n === 'S1') return { z: 0.1, rx: 0.05 };
+  if (n === 'S2') return { z: -0.1, rx: 0.06 };
+  if (n === 'S3') return { z: -0.35, rx: 0.07 };
+  if (n === 'S4') return { z: -0.55, rx: 0.06 };
+  if (n === 'S5') return { z: -0.7, rx: 0.05 };
+  if (n === 'Coccyx') return { z: -0.85, rx: 0.08 };
+  return { z: 0, rx: 0 };
+}
+
+// Create vertebral body
+function createVertebra(data) {
+  const group = new THREE.Group();
+  const color = regions[data.region];
+
+  // Vertebral body - slightly rounded box
+  const bodyGeo = new THREE.CylinderGeometry(
+    data.wx * SCALE * 0.5, // top radius
+    data.wx * SCALE * 0.52, // bottom radius slightly larger
+    data.h * SCALE,
+    16, 1
+  );
+  // Flatten to elliptical shape
+  bodyGeo.scale(1, 1, data.wz / data.wx);
+
+  const bodyMat = new THREE.MeshPhysicalMaterial({
+    color: color,
+    roughness: 0.5,
+    metalness: 0.1,
+    transparent: true,
+    opacity: 0.85,
+    clearcoat: 0.3,
+  });
+  const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
+  bodyMesh.castShadow = true;
+  group.add(bodyMesh);
+
+  // Spinous process (posterior projection)
+  if (data.region !== 'sacral') {
+    const spLen = data.wx * SCALE * 0.7;
+    const spGeo = new THREE.CylinderGeometry(0.04, 0.06, spLen, 6);
+    spGeo.rotateX(Math.PI / 2);
+    const spMat = new THREE.MeshPhysicalMaterial({
+      color: color,
+      roughness: 0.6,
+      metalness: 0.1,
+      transparent: true,
+      opacity: 0.7,
+    });
+    const spMesh = new THREE.Mesh(spGeo, spMat);
+    spMesh.position.z = -data.wz * SCALE * 0.5 - spLen * 0.45;
+    group.add(spMesh);
+    spinousProcesses.push(spMesh);
+
+    // Transverse processes (left and right)
+    const tpLen = data.wx * SCALE * 0.45;
+    const tpGeo = new THREE.CylinderGeometry(0.03, 0.05, tpLen, 6);
+    tpGeo.rotateZ(Math.PI / 2);
+
+    const tpL = new THREE.Mesh(tpGeo, spMat.clone());
+    tpL.position.x = data.wx * SCALE * 0.5 + tpLen * 0.35;
+    tpL.position.z = -data.wz * SCALE * 0.15;
+    group.add(tpL);
+
+    const tpR = new THREE.Mesh(tpGeo, spMat.clone());
+    tpR.position.x = -(data.wx * SCALE * 0.5 + tpLen * 0.35);
+    tpR.position.z = -data.wz * SCALE * 0.15;
+    group.add(tpR);
+  }
+
+  // Position
+  const offset = getNaturalOffset(data);
+  group.position.y = data.y * SCALE;
+  group.position.z = offset.z * SCALE;
+  group.rotation.x = offset.rx;
+
+  group.userData = { ...data, naturalZ: offset.z, naturalRx: offset.rx };
+  return group;
+}
+
+// Create disc between two vertebrae
+function createDisc(upper, lower) {
+  const avgWx = (upper.wx + lower.wx) / 2;
+  const avgWz = (upper.wz + lower.wz) / 2;
+  const discH = (upper.y - lower.y - lower.h * 0.5 - upper.h * 0.5 + 0.3) || 0.4;
+
+  const geo = new THREE.CylinderGeometry(
+    avgWx * SCALE * 0.48,
+    avgWx * SCALE * 0.48,
+    Math.max(discH * SCALE * 0.5, 0.04),
+    20, 1
+  );
+  geo.scale(1, 1, avgWz / avgWx);
+
+  // Nucleus pulposus (inner) color
+  const mat = new THREE.MeshPhysicalMaterial({
+    color: 0x4ecdc4,
+    roughness: 0.3,
+    metalness: 0.0,
+    transparent: true,
+    opacity: 0.7,
+    clearcoat: 0.5,
+    emissive: 0x1a4a47,
+    emissiveIntensity: 0.2,
+  });
+
+  const mesh = new THREE.Mesh(geo, mat);
+
+  // Annulus fibrosus ring
+  const ringGeo = new THREE.TorusGeometry(avgWx * SCALE * 0.46, 0.03, 8, 20);
+  ringGeo.scale(1, 0.3, avgWz / avgWx);
+  const ringMat = new THREE.MeshPhysicalMaterial({
+    color: 0x3aa89f,
+    transparent: true,
+    opacity: 0.5,
+    roughness: 0.4,
+  });
+  const ring = new THREE.Mesh(ringGeo, ringMat);
+  ring.rotation.x = Math.PI / 2;
+  mesh.add(ring);
+
+  const yPos = (upper.y + lower.y + lower.h * 0.5) / 2 * SCALE;
+  const upperOff = getNaturalOffset(upper);
+  const lowerOff = getNaturalOffset(lower);
+  mesh.position.y = yPos;
+  mesh.position.z = ((upperOff.z + lowerOff.z) / 2) * SCALE;
+
+  mesh.userData = {
+    upperName: upper.name,
+    lowerName: lower.name,
+    label: `${lower.name}/${upper.name}`,
+    baseScaleY: 1,
+    basePosY: yPos,
+    region: lower.region === 'lumbar' || upper.region === 'lumbar' ? 'lumbar' :
+            lower.region === 'cervical' || upper.region === 'cervical' ? 'cervical' : 'thoracic',
+    pressure: 1.0,
+  };
+
+  return mesh;
+}
+
+// Build all vertebrae
+vertebraeData.forEach(d => {
+  const v = createVertebra(d);
+  spineGroup.add(v);
+  vertebraMeshes.push(v);
+});
+
+// Build discs between movable vertebrae (not within sacral)
+for (let i = 6; i < vertebraeData.length - 1; i++) {
+  // skip within sacrum/coccyx (indices 0-5)
+  const disc = createDisc(vertebraeData[i + 1], vertebraeData[i]);
+  spineGroup.add(disc);
+  discMeshes.push(disc);
+}
+
+// Center the spine vertically
+const spineCenter = 22 * SCALE;
+spineGroup.position.y = -spineCenter;
+
+// ── POSTURE DATA ──
+// Pressure values based on Nachemson (1966), Wilke (1999) intradiscal pressure studies
+// Normalized: standing = 1.0
+const postureData = {
+  standing: {
+    desc: "Normal standing posture. The spine maintains its natural S-curve — cervical and lumbar lordosis, thoracic kyphosis. Intradiscal pressure at L4/L5 is the baseline reference (~0.5 MPa). Load is distributed relatively evenly.",
+    cervicalPressure: 0.8,
+    thoracicPressure: 0.85,
+    lumbarPressure: 1.0,
+    // Curvature multipliers (1 = natural)
+    cervicalCurve: 1.0,
+    thoracicCurve: 1.0,
+    lumbarCurve: 1.0,
+    lateralBend: 0,
+    discCompression: { cervical: 0, thoracic: 0, lumbar: 0 },
+    discShift: { cervical: 0, thoracic: 0, lumbar: 0 }, // AP nucleus shift
+  },
+  sitting: {
+    desc: "Sitting upright flattens the lumbar lordosis, increasing intradiscal pressure by ~40% compared to standing (Nachemson 1966, Wilke 1999). The pelvis tilts posteriorly, reducing the lumbar curve. Thoracic load increases moderately.",
+    cervicalPressure: 0.9,
+    thoracicPressure: 1.1,
+    lumbarPressure: 1.4,
+    cervicalCurve: 0.9,
+    thoracicCurve: 1.15,
+    lumbarCurve: 0.5,
+    lateralBend: 0,
+    discCompression: { cervical: 0.05, thoracic: 0.1, lumbar: 0.2 },
+    discShift: { cervical: 0, thoracic: 0.05, lumbar: 0.15 },
+  },
+  slouching: {
+    desc: "Slouching dramatically increases lumbar disc pressure (~185% of standing). The lumbar lordosis reverses into kyphosis, the thoracic curve increases, and the head shifts forward — loading cervical discs heavily. Posterior disc bulging is at its worst.",
+    cervicalPressure: 1.5,
+    thoracicPressure: 1.3,
+    lumbarPressure: 1.85,
+    cervicalCurve: 0.3,
+    thoracicCurve: 1.6,
+    lumbarCurve: -0.3,
+    lateralBend: 0,
+    discCompression: { cervical: 0.15, thoracic: 0.15, lumbar: 0.35 },
+    discShift: { cervical: 0.1, thoracic: 0.1, lumbar: 0.3 },
+  },
+  bending: {
+    desc: "Forward flexion (bending to pick something up) increases lumbar disc pressure to ~150% of standing. The lumbar lordosis reverses, stretching the posterior annulus fibrosis. The nucleus pulposus shifts posteriorly, increasing herniation risk at L4/L5 and L5/S1.",
+    cervicalPressure: 1.0,
+    thoracicPressure: 1.2,
+    lumbarPressure: 1.5,
+    cervicalCurve: 0.6,
+    thoracicCurve: 1.5,
+    lumbarCurve: -0.5,
+    lateralBend: 0,
+    discCompression: { cervical: 0.05, thoracic: 0.15, lumbar: 0.3 },
+    discShift: { cervical: 0, thoracic: 0.1, lumbar: 0.35 },
+  },
+  extension: {
+    desc: "Spinal extension (arching backward) reduces intradiscal pressure slightly (~80% of standing). The lumbar lordosis deepens, the anterior annulus is compressed, and the nucleus shifts anteriorly. Facet joints bear more load. Can compress nerve roots if stenosis is present.",
+    cervicalPressure: 0.7,
+    thoracicPressure: 0.75,
+    lumbarPressure: 0.8,
+    cervicalCurve: 1.5,
+    thoracicCurve: 0.5,
+    lumbarCurve: 1.8,
+    lateralBend: 0,
+    discCompression: { cervical: 0.05, thoracic: 0.05, lumbar: 0.1 },
+    discShift: { cervical: -0.05, thoracic: -0.05, lumbar: -0.2 },
+  },
+  lateral: {
+    desc: "Lateral bending compresses the disc asymmetrically — one side is compressed while the opposite side is stretched. The nucleus shifts toward the convex side. Ipsilateral facet joints are loaded. Lumbar pressure is ~100% of standing but distributed unevenly.",
+    cervicalPressure: 0.9,
+    thoracicPressure: 0.95,
+    lumbarPressure: 1.0,
+    cervicalCurve: 1.0,
+    thoracicCurve: 1.0,
+    lumbarCurve: 1.0,
+    lateralBend: 1.0,
+    discCompression: { cervical: 0.1, thoracic: 0.1, lumbar: 0.15 },
+    discShift: { cervical: 0, thoracic: 0, lumbar: 0 },
+  },
+  lifting: {
+    desc: "Lifting a heavy object with a bent back produces the highest disc pressures — up to 220% of standing (Nachemson). Combining flexion with load dramatically increases compressive and shear forces on L4/L5 and L5/S1 discs, with extreme posterior nucleus shift.",
+    cervicalPressure: 1.2,
+    thoracicPressure: 1.5,
+    lumbarPressure: 2.2,
+    cervicalCurve: 0.7,
+    thoracicCurve: 1.4,
+    lumbarCurve: -0.3,
+    lateralBend: 0,
+    discCompression: { cervical: 0.1, thoracic: 0.2, lumbar: 0.45 },
+    discShift: { cervical: 0, thoracic: 0.15, lumbar: 0.4 },
+  },
+  supine: {
+    desc: "Lying flat on the back (supine) produces the lowest disc pressure — about 25% of standing. Gravity's compressive force is nearly eliminated. The spine is near its most relaxed state. This is why bed rest can relieve acute disc symptoms.",
+    cervicalPressure: 0.25,
+    thoracicPressure: 0.2,
+    lumbarPressure: 0.25,
+    cervicalCurve: 0.8,
+    thoracicCurve: 0.8,
+    lumbarCurve: 0.7,
+    lateralBend: 0,
+    discCompression: { cervical: -0.1, thoracic: -0.1, lumbar: -0.15 },
+    discShift: { cervical: 0, thoracic: 0, lumbar: 0 },
+  },
+};
+
+let currentPosture = 'standing';
+let targetPosture = postureData.standing;
+let animProgress = 1;
+
+// ── APPLY POSTURE ──
+function lerpVal(a, b, t) { return a + (b - a) * t; }
+
+function applyPosture(t) {
+  const p = targetPosture;
+
+  discMeshes.forEach((disc, i) => {
+    const r = disc.userData.region;
+    const pressure = r === 'lumbar' ? p.lumbarPressure :
+                     r === 'cervical' ? p.cervicalPressure : p.thoracicPressure;
+    const compression = r === 'lumbar' ? p.discCompression.lumbar :
+                        r === 'cervical' ? p.discCompression.cervical : p.discCompression.thoracic;
+    const shift = r === 'lumbar' ? p.discShift.lumbar :
+                  r === 'cervical' ? p.discShift.cervical : p.discShift.thoracic;
+
+    // Scale disc vertically (compressed = thinner)
+    const scaleY = lerpVal(disc.scale.y, 1 - compression, t * 0.08);
+    disc.scale.y = scaleY;
+
+    // Wider when compressed (bulging)
+    const scaleXZ = lerpVal(disc.scale.x, 1 + compression * 0.3, t * 0.08);
+    disc.scale.x = scaleXZ;
+    disc.scale.z = scaleXZ;
+
+    // Nucleus shift (posterior = +Z in our coordinate)
+    const targetZ = disc.userData.basePosY ? disc.position.z : 0;
+
+    // Color based on pressure
+    const hue = pressure <= 1.0 ? 0.48 : // teal
+                pressure <= 1.5 ? lerpVal(0.48, 0.12, (pressure - 1.0) / 0.5) : // to yellow
+                lerpVal(0.12, 0.0, Math.min((pressure - 1.5) / 0.7, 1)); // to red
+    const sat = 0.7 + pressure * 0.1;
+    const lum = 0.5;
+
+    disc.material.color.setHSL(hue, sat, lum);
+    disc.material.emissive.setHSL(hue, sat * 0.6, lum * 0.3);
+    disc.material.emissiveIntensity = lerpVal(disc.material.emissiveIntensity, 0.1 + pressure * 0.15, t * 0.08);
+    disc.material.opacity = lerpVal(disc.material.opacity, 0.5 + pressure * 0.2, t * 0.08);
+
+    disc.userData.pressure = pressure;
+  });
+
+  // Adjust vertebrae curvature
+  vertebraMeshes.forEach((vm) => {
+    const d = vm.userData;
+    if (!d.region) return;
+
+    const curveMult = d.region === 'cervical' ? p.cervicalCurve :
+                      d.region === 'thoracic' ? p.thoracicCurve :
+                      d.region === 'lumbar' ? p.lumbarCurve : 1.0;
+
+    const targetZ = d.naturalZ * curveMult * SCALE;
+    const targetRx = d.naturalRx * curveMult;
+
+    vm.position.z = lerpVal(vm.position.z, targetZ, t * 0.06);
+    vm.rotation.x = lerpVal(vm.rotation.x, targetRx, t * 0.06);
+
+    // Lateral bend
+    if (p.lateralBend && d.region !== 'sacral') {
+      const lateralAmount = p.lateralBend * 0.012 * (d.y * SCALE - 5);
+      vm.rotation.z = lerpVal(vm.rotation.z, lateralAmount, t * 0.06);
+    } else {
+      vm.rotation.z = lerpVal(vm.rotation.z, 0, t * 0.06);
+    }
+  });
+}
+
+// ── DISC PRESSURE UI ──
+const discBarsContainer = document.getElementById('disc-bars');
+const keyDiscs = ['L5/S1', 'L4/L5', 'L3/L4', 'L1/L2', 'T12/L1', 'T6/T7', 'C5/C6'];
+
+function buildDiscBars() {
+  discBarsContainer.innerHTML = '';
+  const displayDiscs = discMeshes.filter(d => {
+    const label = `${d.userData.upperName}/${d.userData.lowerName}`;
+    // Show key clinical discs
+    return keyDiscs.some(k => label.includes(k.split('/')[0]) && label.includes(k.split('/')[1]));
+  });
+
+  // fallback: show a subset
+  const toShow = displayDiscs.length > 0 ? displayDiscs : discMeshes.filter((_, i) => i % 3 === 0);
+
+  toShow.reverse().forEach(d => {
+    const div = document.createElement('div');
+    div.className = 'disc-info';
+    div.innerHTML = `
+      <div class="disc-info-label">${d.userData.lowerName} / ${d.userData.upperName}</div>
+      <div class="pressure-bar"><div class="pressure-fill" id="bar-${d.userData.lowerName}" style="width:50%;background:var(--disc-healthy)"></div></div>
+      <div class="pressure-val" id="val-${d.userData.lowerName}">100%</div>
+    `;
+    discBarsContainer.appendChild(div);
+  });
+}
+buildDiscBars();
+
+function updateDiscBars() {
+  discMeshes.forEach(d => {
+    const bar = document.getElementById(`bar-${d.userData.lowerName}`);
+    const val = document.getElementById(`val-${d.userData.lowerName}`);
+    if (!bar || !val) return;
+    const pct = Math.round(d.userData.pressure * 100);
+    bar.style.width = Math.min(pct / 2.5 * 100, 100) + '%';
+    const color = d.userData.pressure <= 1.0 ? 'var(--disc-healthy)' :
+                  d.userData.pressure <= 1.5 ? 'var(--warn)' : 'var(--disc-compressed)';
+    bar.style.background = color;
+    val.textContent = pct + '%';
+  });
+}
+
+// ── POSTURE BUTTONS ──
+document.querySelectorAll('.posture-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.posture-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const posture = btn.dataset.posture;
+    currentPosture = posture;
+    targetPosture = postureData[posture];
+    document.getElementById('posture-desc').textContent = targetPosture.desc;
+    animProgress = 0;
+  });
+});
+
+// ── ORBIT CONTROLS (manual) ──
+let isDragging = false;
+let prevMouse = { x: 0, y: 0 };
+let orbitAngles = { theta: 0, phi: Math.PI / 2 };
+let orbitRadius = 18;
+let targetOrbitRadius = 18;
+
+const canvas = renderer.domElement;
+canvas.addEventListener('mousedown', e => { isDragging = true; prevMouse = { x: e.clientX, y: e.clientY }; });
+canvas.addEventListener('touchstart', e => { isDragging = true; const t = e.touches[0]; prevMouse = { x: t.clientX, y: t.clientY }; });
+
+window.addEventListener('mousemove', e => {
+  if (!isDragging) return;
+  const dx = e.clientX - prevMouse.x;
+  const dy = e.clientY - prevMouse.y;
+  orbitAngles.theta -= dx * 0.008;
+  orbitAngles.phi = Math.max(0.3, Math.min(Math.PI - 0.3, orbitAngles.phi - dy * 0.008));
+  prevMouse = { x: e.clientX, y: e.clientY };
+});
+
+window.addEventListener('touchmove', e => {
+  if (!isDragging) return;
+  const t = e.touches[0];
+  const dx = t.clientX - prevMouse.x;
+  const dy = t.clientY - prevMouse.y;
+  orbitAngles.theta -= dx * 0.008;
+  orbitAngles.phi = Math.max(0.3, Math.min(Math.PI - 0.3, orbitAngles.phi - dy * 0.008));
+  prevMouse = { x: t.clientX, y: t.clientY };
+});
+
+window.addEventListener('mouseup', () => isDragging = false);
+window.addEventListener('touchend', () => isDragging = false);
+
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  targetOrbitRadius = Math.max(8, Math.min(35, targetOrbitRadius + e.deltaY * 0.015));
+}, { passive: false });
+
+// ── ANIMATION LOOP ──
+function animate() {
+  requestAnimationFrame(animate);
+
+  // Smooth orbit
+  orbitRadius += (targetOrbitRadius - orbitRadius) * 0.08;
+  camera.position.x = orbitRadius * Math.sin(orbitAngles.phi) * Math.sin(orbitAngles.theta);
+  camera.position.y = orbitRadius * Math.cos(orbitAngles.phi);
+  camera.position.z = orbitRadius * Math.sin(orbitAngles.phi) * Math.cos(orbitAngles.theta);
+  camera.lookAt(0, 1, 0);
+
+  // Animate posture
+  if (animProgress < 1) {
+    animProgress = Math.min(1, animProgress + 0.016);
+  }
+  applyPosture(1);
+  updateDiscBars();
+
+  renderer.render(scene, camera);
+}
+
+animate();
+
+// ── RESIZE ──
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+</body>
+</html>

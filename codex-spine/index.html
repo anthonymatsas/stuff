@@ -1,0 +1,813 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Interactive Spine and Disc Model</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: rgba(10,16,32,0.86);
+      --panel-border: rgba(255,255,255,0.10);
+      --text: #eaf1ff;
+      --muted: #a9b6d3;
+      --accent: #7dc4ff;
+      --warn: #ffd36e;
+      --danger: #ff7d7d;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; overflow: hidden; background: var(--bg); color: var(--text); font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    #app { position: fixed; inset: 0; }
+    canvas { display: block; }
+    .panel {
+      position: absolute;
+      width: 340px;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      backdrop-filter: blur(12px);
+      border-radius: 16px;
+      padding: 14px 14px 12px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+      z-index: 10;
+    }
+    #controls { top: 14px; left: 14px; max-height: calc(100vh - 28px); overflow: auto; }
+    #inspector { top: 14px; right: 14px; }
+    h1 { margin: 0 0 8px; font-size: 20px; line-height: 1.15; }
+    h2 { margin: 14px 0 8px; font-size: 14px; color: var(--accent); font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; }
+    p, .tiny { margin: 0 0 8px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .row { display: flex; gap: 10px; align-items: center; margin: 8px 0; }
+    .row label { flex: 1 1 auto; font-size: 13px; }
+    .row .value { width: 64px; text-align: right; font-size: 12px; color: var(--muted); }
+    input[type="range"] { width: 100%; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    button, select {
+      width: 100%;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      padding: 10px 12px;
+      font: inherit;
+      cursor: pointer;
+    }
+    button:hover, select:hover { background: rgba(255,255,255,0.10); }
+    button.active { border-color: rgba(125,196,255,0.55); box-shadow: inset 0 0 0 1px rgba(125,196,255,0.25); background: rgba(125,196,255,0.12); }
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .stat {
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.04);
+      border-radius: 12px;
+      padding: 10px;
+    }
+    .stat .k { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+    .stat .v { font-size: 20px; font-weight: 700; }
+    .legend { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+    .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
+    .dot { width: 10px; height: 10px; border-radius: 999px; }
+    .note { border-left: 3px solid var(--warn); padding-left: 10px; margin-top: 8px; }
+    .callout { border-left: 3px solid var(--accent); padding-left: 10px; margin-top: 8px; }
+    .warn { color: var(--warn); }
+    .danger { color: var(--danger); }
+    #hoverTag {
+      position: absolute;
+      pointer-events: none;
+      background: rgba(7,10,18,0.9);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 6px 9px;
+      font-size: 12px;
+      color: var(--text);
+      transform: translate(12px, 12px);
+      display: none;
+      z-index: 20;
+      white-space: nowrap;
+    }
+    .footerLine { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08); }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <div id="controls" class="panel">
+    <h1>Interactive Spine & Disc Model</h1>
+    <p>Drag to orbit, scroll to zoom, and click a disc to inspect it. The geometry is anatomically proportioned and the posture logic is evidence-informed, but this is <span class="warn">not a diagnostic or patient-specific finite-element simulation</span>.</p>
+
+    <h2>Posture presets</h2>
+    <div class="grid2" id="presetButtons"></div>
+
+    <h2>Manual controls</h2>
+    <div class="row"><label for="trunkFlex">Trunk flexion / extension</label><div id="trunkFlexVal" class="value">0°</div></div>
+    <input id="trunkFlex" type="range" min="-20" max="70" step="1" value="0" />
+
+    <div class="row"><label for="pelvicTilt">Pelvic tilt</label><div id="pelvicTiltVal" class="value">0°</div></div>
+    <input id="pelvicTilt" type="range" min="-20" max="25" step="1" value="0" />
+
+    <div class="row"><label for="externalLoad">External load</label><div id="externalLoadVal" class="value">0 kg</div></div>
+    <input id="externalLoad" type="range" min="0" max="25" step="1" value="0" />
+
+    <div class="row"><label for="lumbarSupport">Lumbar support</label><div id="lumbarSupportVal" class="value">0%</div></div>
+    <input id="lumbarSupport" type="range" min="0" max="100" step="1" value="0" />
+
+    <div class="row"><label for="showChair">Show chair / seat</label><div class="value"><input id="showChair" type="checkbox" /></div></div>
+    <div class="row"><label for="showLabels">Show disc labels</label><div class="value"><input id="showLabels" type="checkbox" checked /></div></div>
+    <div class="row"><label for="showNuclei">Show nuclei</label><div class="value"><input id="showNuclei" type="checkbox" checked /></div></div>
+
+    <div class="stats">
+      <div class="stat"><div class="k">Lumbar flexion bias</div><div id="lumbarFlexDisplay" class="v">0°</div></div>
+      <div class="stat"><div class="k">L4–L5 load index</div><div id="loadDisplay" class="v">1.00×</div></div>
+    </div>
+
+    <div class="callout tiny">Color shifts toward red as estimated disc load rises. Nucleus position drifts posteriorly in flexion and anteriorly in extension. Wedge shape changes show anterior compression in flexion and posterior compression in extension.</div>
+    <div class="note tiny">For high-fidelity medical planning, you would need MRI/CT-derived geometry, tissue properties, muscle forces, and a validated finite-element solver. This viewer is best used for education and conceptual exploration.</div>
+  </div>
+
+  <div id="inspector" class="panel">
+    <h1 id="discName">Click a disc</h1>
+    <p id="discSummary">Select any disc to view its estimated deformation pattern under the current posture.</p>
+    <div class="stats">
+      <div class="stat"><div class="k">Relative load</div><div id="discLoad" class="v">—</div></div>
+      <div class="stat"><div class="k">Wedge change</div><div id="discWedge" class="v">—</div></div>
+      <div class="stat"><div class="k">Bulge tendency</div><div id="discBulge" class="v">—</div></div>
+      <div class="stat"><div class="k">Nucleus shift</div><div id="discShift" class="v">—</div></div>
+    </div>
+    <div class="legend">
+      <span class="chip"><span class="dot" style="background:#93d5ff"></span> Nucleus pulposus</span>
+      <span class="chip"><span class="dot" style="background:#7ee1b2"></span> Lower load</span>
+      <span class="chip"><span class="dot" style="background:#ffb16e"></span> Higher load</span>
+    </div>
+    <div class="footerLine tiny">
+      The disc mechanics shown here follow broad trends from published lumbar biomechanics: unsupported sitting and flexion generally increase intradiscal loading relative to relaxed standing, while preserving lordosis or reclining reduces it. Modern reviews also show the magnitude varies by level, degeneration state, and measurement method.
+    </div>
+  </div>
+
+  <div id="hoverTag"></div>
+  <div id="statusBanner" class="panel" style="left:50%;bottom:14px;transform:translateX(-50%);width:min(760px,calc(100vw - 28px));display:none;z-index:30;"></div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    const app = document.getElementById('app');
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    app.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0b1020);
+    scene.fog = new THREE.Fog(0x0b1020, 18, 42);
+
+    const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 200);
+    camera.position.set(8.5, 6.6, 12.5);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.target.set(0, 7, 0.5);
+    controls.minDistance = 7;
+    controls.maxDistance = 30;
+
+    scene.add(new THREE.AmbientLight(0xffffff, 1.6));
+    const dir1 = new THREE.DirectionalLight(0xffffff, 1.8); dir1.position.set(8, 14, 10); scene.add(dir1);
+    const dir2 = new THREE.DirectionalLight(0x88aaff, 0.8); dir2.position.set(-10, 6, -8); scene.add(dir2);
+
+    const grid = new THREE.GridHelper(30, 30, 0x34506f, 0x1e2d40);
+    grid.position.y = -0.01;
+    scene.add(grid);
+
+    const floorMat = new THREE.MeshPhongMaterial({ color: 0x0d1425, transparent: true, opacity: 0.65 });
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), floorMat);
+    floor.rotation.x = -Math.PI / 2;
+    scene.add(floor);
+
+    const chairGroup = new THREE.Group();
+    scene.add(chairGroup);
+
+    function makeChair() {
+      chairGroup.clear();
+      const seatMat = new THREE.MeshPhongMaterial({ color: 0x334763, transparent: true, opacity: 0.55 });
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(3.7, 0.22, 3.7), seatMat);
+      seat.position.set(0, 3.2, -0.4);
+      chairGroup.add(seat);
+      const back = new THREE.Mesh(new THREE.BoxGeometry(3.7, 4.6, 0.22), seatMat);
+      back.position.set(0, 5.45, -2.15);
+      chairGroup.add(back);
+      const legGeo = new THREE.CylinderGeometry(0.08, 0.08, 3.2, 12);
+      const legPositions = [[-1.5, 1.6, 0.9], [1.5, 1.6, 0.9], [-1.5, 1.6, -1.7], [1.5, 1.6, -1.7]];
+      for (const [x,y,z] of legPositions) {
+        const leg = new THREE.Mesh(legGeo, seatMat);
+        leg.position.set(x,y,z);
+        chairGroup.add(leg);
+      }
+    }
+    makeChair();
+
+    const boneMat = new THREE.MeshPhongMaterial({ color: 0xf5efe4, shininess: 40 });
+    const corticalMat = new THREE.MeshPhongMaterial({ color: 0xefe7d8, shininess: 55 });
+    const pelvisMat = new THREE.MeshPhongMaterial({ color: 0xf1eadc, shininess: 40, transparent: true, opacity: 0.95 });
+
+    function roundedBox(w, h, d) {
+      return new THREE.BoxGeometry(w, h, d, 2, 2, 2);
+    }
+
+    function createVertebra(region, name) {
+      const g = new THREE.Group();
+      const spec = {
+        cervical: { w: 1.00, h: 0.45, d: 0.80, ped: 0.25, spinous: [0.12, 0.42, 0.32], trans: [0.35, 0.10, 0.12], arch: [0.75, 0.18, 0.18] },
+        thoracic: { w: 1.26, h: 0.58, d: 0.92, ped: 0.30, spinous: [0.14, 0.75, 0.26], trans: [0.42, 0.12, 0.15], arch: [0.92, 0.20, 0.22] },
+        lumbar:   { w: 1.72, h: 0.92, d: 1.18, ped: 0.35, spinous: [0.22, 0.52, 0.46], trans: [0.50, 0.14, 0.20], arch: [1.18, 0.24, 0.26] },
+      }[region];
+
+      const body = new THREE.Mesh(roundedBox(spec.w, spec.h, spec.d), boneMat);
+      g.add(body);
+
+      const arch = new THREE.Mesh(roundedBox(spec.arch[0], spec.arch[1], spec.arch[2]), corticalMat);
+      arch.position.set(0, 0.02, -spec.d * 0.58);
+      g.add(arch);
+
+      const leftPed = new THREE.Mesh(roundedBox(spec.ped, spec.h * 0.55, 0.18), corticalMat);
+      const rightPed = leftPed.clone();
+      leftPed.position.set(-spec.w * 0.28, 0, -spec.d * 0.33);
+      rightPed.position.set(spec.w * 0.28, 0, -spec.d * 0.33);
+      g.add(leftPed, rightPed);
+
+      const spinous = new THREE.Mesh(roundedBox(spec.spinous[0], spec.spinous[1], spec.spinous[2]), corticalMat);
+      spinous.position.set(0, region === 'thoracic' ? -0.12 : 0.0, -spec.d * 0.97);
+      spinous.rotation.x = region === 'thoracic' ? 0.45 : region === 'cervical' ? 0.12 : -0.18;
+      g.add(spinous);
+
+      const tpGeo = roundedBox(spec.trans[0], spec.trans[1], spec.trans[2]);
+      const ltp = new THREE.Mesh(tpGeo, corticalMat);
+      const rtp = new THREE.Mesh(tpGeo, corticalMat);
+      ltp.position.set(-spec.w * 0.58, 0.03, -spec.d * 0.25);
+      rtp.position.set(spec.w * 0.58, 0.03, -spec.d * 0.25);
+      g.add(ltp, rtp);
+
+      if (region === 'cervical') {
+        const foramenGeo = new THREE.TorusGeometry(spec.w * 0.18, 0.04, 8, 14);
+        const lFor = new THREE.Mesh(foramenGeo, corticalMat);
+        const rFor = new THREE.Mesh(foramenGeo, corticalMat);
+        lFor.rotation.x = Math.PI / 2;
+        rFor.rotation.x = Math.PI / 2;
+        lFor.position.set(-spec.w * 0.42, 0.02, -spec.d * 0.12);
+        rFor.position.set(spec.w * 0.42, 0.02, -spec.d * 0.12);
+        g.add(lFor, rFor);
+      }
+
+      g.userData = { name, region, bodyHeight: spec.h, bodyDepth: spec.d, bodyWidth: spec.w };
+      return g;
+    }
+
+    function createSacrum() {
+      const g = new THREE.Group();
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(1.8, 1.15, 2.2, 24, 1), pelvisMat);
+      base.rotation.z = Math.PI / 2;
+      base.rotation.y = Math.PI / 2;
+      g.add(base);
+      const leftWing = new THREE.Mesh(roundedBox(1.2, 2.3, 0.45), pelvisMat);
+      const rightWing = leftWing.clone();
+      leftWing.position.set(-1.45, 0.25, 0.2);
+      rightWing.position.set(1.45, 0.25, 0.2);
+      g.add(leftWing, rightWing);
+      const iliacL = new THREE.Mesh(roundedBox(1.5, 0.52, 2.5), pelvisMat);
+      const iliacR = iliacL.clone();
+      iliacL.position.set(-2.1, 0.9, 0.0);
+      iliacR.position.set(2.1, 0.9, 0.0);
+      iliacL.rotation.z = -0.38;
+      iliacR.rotation.z = 0.38;
+      g.add(iliacL, iliacR);
+      const acetL = new THREE.Mesh(new THREE.SphereGeometry(0.30, 18, 18), pelvisMat);
+      const acetR = acetL.clone();
+      acetL.position.set(-1.3, -0.55, 0.55);
+      acetR.position.set(1.3, -0.55, 0.55);
+      g.add(acetL, acetR);
+      g.userData.bodyHeight = 1.6;
+      return g;
+    }
+
+    function createFemur() {
+      const g = new THREE.Group();
+      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.14, 4.1, 16), pelvisMat);
+      shaft.position.y = -2.05;
+      g.add(shaft);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 16), pelvisMat);
+      head.position.y = 0.0;
+      g.add(head);
+      return g;
+    }
+
+    function createDiscGeometry(radius, height, wedge, bulge, radialSeg = 40) {
+      const verts = [];
+      const indices = [];
+      const uvs = [];
+      const topCenterIndex = 0;
+      const bottomCenterIndex = 1;
+      verts.push(0, height / 2, 0);
+      verts.push(0, -height / 2, 0);
+      uvs.push(0.5, 0.5, 0.5, 0.5);
+
+      for (let i = 0; i <= radialSeg; i++) {
+        const t = (i / radialSeg) * Math.PI * 2;
+        const cx = Math.sin(t);
+        const cz = Math.cos(t);
+        const h = height * (1 - wedge * cz);
+        const localBulge = bulge * (-cz);
+        const r = radius * (1 + localBulge);
+        const x = r * cx;
+        const z = r * cz;
+        verts.push(x, h / 2, z);
+        verts.push(x, -h / 2, z);
+        uvs.push(i / radialSeg, 1, i / radialSeg, 0);
+      }
+
+      for (let i = 0; i < radialSeg; i++) {
+        const a = 2 + i * 2;
+        const b = a + 1;
+        const c = a + 2;
+        const d = a + 3;
+        indices.push(a, b, c, b, d, c);
+        indices.push(topCenterIndex, c, a);
+        indices.push(bottomCenterIndex, b, d);
+      }
+
+      const geo = new THREE.BufferGeometry();
+      geo.setIndex(indices);
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+      geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+      geo.computeVertexNormals();
+      return geo;
+    }
+
+    function discColor(loadIndex) {
+      const t = THREE.MathUtils.clamp((loadIndex - 0.75) / 1.75, 0, 1);
+      return new THREE.Color().setHSL(0.36 - 0.30 * t, 0.72, 0.48 + 0.02 * (1 - t));
+    }
+
+    const spineRoot = new THREE.Group();
+    scene.add(spineRoot);
+
+    const sacrum = createSacrum();
+    spineRoot.add(sacrum);
+    sacrum.position.y = 1.35;
+
+    const leftFemur = createFemur();
+    const rightFemur = createFemur();
+    sacrum.add(leftFemur, rightFemur);
+    leftFemur.position.set(-1.32, -0.52, 0.55);
+    rightFemur.position.set(1.32, -0.52, 0.55);
+
+    const discMat = new THREE.MeshPhongMaterial({ color: 0x63d2a4, transparent: true, opacity: 0.82, shininess: 50, side: THREE.DoubleSide });
+    const nucleusMat = new THREE.MeshPhongMaterial({ color: 0x93d5ff, transparent: true, opacity: 0.80, shininess: 85 });
+    const labelSprites = [];
+
+    const levelsBottomUp = [
+      { disc: 'L5-S1', vertebra: 'L5', region: 'lumbar',   discR: 1.35, discH: 0.52, bodyH: 0.92 },
+      { disc: 'L4-L5', vertebra: 'L4', region: 'lumbar',   discR: 1.32, discH: 0.50, bodyH: 0.92 },
+      { disc: 'L3-L4', vertebra: 'L3', region: 'lumbar',   discR: 1.28, discH: 0.48, bodyH: 0.92 },
+      { disc: 'L2-L3', vertebra: 'L2', region: 'lumbar',   discR: 1.23, discH: 0.44, bodyH: 0.90 },
+      { disc: 'L1-L2', vertebra: 'L1', region: 'lumbar',   discR: 1.18, discH: 0.40, bodyH: 0.88 },
+      { disc: 'T12-L1', vertebra: 'T12', region: 'thoracic', discR: 1.05, discH: 0.34, bodyH: 0.58 },
+      { disc: 'T11-T12', vertebra: 'T11', region: 'thoracic', discR: 1.02, discH: 0.33, bodyH: 0.58 },
+      { disc: 'T10-T11', vertebra: 'T10', region: 'thoracic', discR: 1.00, discH: 0.33, bodyH: 0.58 },
+      { disc: 'T9-T10', vertebra: 'T9', region: 'thoracic', discR: 0.98, discH: 0.32, bodyH: 0.58 },
+      { disc: 'T8-T9', vertebra: 'T8', region: 'thoracic', discR: 0.96, discH: 0.31, bodyH: 0.58 },
+      { disc: 'T7-T8', vertebra: 'T7', region: 'thoracic', discR: 0.95, discH: 0.31, bodyH: 0.58 },
+      { disc: 'T6-T7', vertebra: 'T6', region: 'thoracic', discR: 0.94, discH: 0.30, bodyH: 0.57 },
+      { disc: 'T5-T6', vertebra: 'T5', region: 'thoracic', discR: 0.93, discH: 0.30, bodyH: 0.56 },
+      { disc: 'T4-T5', vertebra: 'T4', region: 'thoracic', discR: 0.92, discH: 0.29, bodyH: 0.56 },
+      { disc: 'T3-T4', vertebra: 'T3', region: 'thoracic', discR: 0.90, discH: 0.28, bodyH: 0.55 },
+      { disc: 'T2-T3', vertebra: 'T2', region: 'thoracic', discR: 0.89, discH: 0.27, bodyH: 0.54 },
+      { disc: 'T1-T2', vertebra: 'T1', region: 'thoracic', discR: 0.88, discH: 0.27, bodyH: 0.54 },
+      { disc: 'C7-T1', vertebra: 'C7', region: 'cervical', discR: 0.78, discH: 0.24, bodyH: 0.45 },
+      { disc: 'C6-C7', vertebra: 'C6', region: 'cervical', discR: 0.76, discH: 0.22, bodyH: 0.45 },
+      { disc: 'C5-C6', vertebra: 'C5', region: 'cervical', discR: 0.74, discH: 0.21, bodyH: 0.45 },
+      { disc: 'C4-C5', vertebra: 'C4', region: 'cervical', discR: 0.72, discH: 0.20, bodyH: 0.45 },
+      { disc: 'C3-C4', vertebra: 'C3', region: 'cervical', discR: 0.70, discH: 0.20, bodyH: 0.44 },
+      { disc: 'C2-C3', vertebra: 'C2', region: 'cervical', discR: 0.68, discH: 0.19, bodyH: 0.44 },
+    ];
+
+    const neutralAngles = {
+      'L5-S1': -7, 'L4-L5': -8, 'L3-L4': -8, 'L2-L3': -7, 'L1-L2': -6,
+      'T12-L1': 1, 'T11-T12': 2, 'T10-T11': 3, 'T9-T10': 3.5, 'T8-T9': 4, 'T7-T8': 4.5,
+      'T6-T7': 4.5, 'T5-T6': 4, 'T4-T5': 3.5, 'T3-T4': 3, 'T2-T3': 2.5, 'T1-T2': 2, 'C7-T1': 1,
+      'C6-C7': -3, 'C5-C6': -5, 'C4-C5': -5, 'C3-C4': -5, 'C2-C3': -4,
+    };
+
+    const lumbarOrder = ['L1-L2', 'L2-L3', 'L3-L4', 'L4-L5', 'L5-S1'];
+    const lumbarWeight = { 'L1-L2': 0.86, 'L2-L3': 0.92, 'L3-L4': 1.00, 'L4-L5': 1.12, 'L5-S1': 1.18 };
+
+    const segmentObjects = [];
+    let currentParent = sacrum;
+    let currentTopY = 1.05;
+
+    function createLabel(text) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = 'rgba(7, 10, 18, 0.78)';
+      ctx.beginPath();
+      if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(4, 8, 248, 48, 12);
+      } else {
+        ctx.rect(4, 8, 248, 48);
+      }
+      ctx.fill();
+      ctx.font = '700 24px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#f5f8ff';
+      ctx.fillText(text, 128, 32);
+      const tex = new THREE.CanvasTexture(canvas);
+      const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false });
+      const sprite = new THREE.Sprite(mat);
+      sprite.scale.set(1.6, 0.4, 1);
+      return sprite;
+    }
+
+    for (const level of levelsBottomUp) {
+      const pivot = new THREE.Group();
+      pivot.position.y = currentTopY;
+      currentParent.add(pivot);
+
+      const discGeo = createDiscGeometry(level.discR, level.discH, 0, 0);
+      const disc = new THREE.Mesh(discGeo, discMat.clone());
+      disc.position.y = level.discH / 2;
+      disc.userData = { level: level.disc, region: level.region, type: 'disc' };
+      pivot.add(disc);
+
+      const nucleus = new THREE.Mesh(new THREE.SphereGeometry(level.discR * 0.54, 20, 20), nucleusMat.clone());
+      nucleus.scale.set(1.0, level.discH / (level.discR * 0.54 * 2) * 0.82, 0.80);
+      nucleus.position.y = level.discH / 2;
+      pivot.add(nucleus);
+
+      const vertebra = createVertebra(level.region, level.vertebra);
+      vertebra.position.y = level.discH + level.bodyH / 2;
+      pivot.add(vertebra);
+
+      const label = createLabel(level.disc);
+      label.position.set(level.discR * 1.25, level.discH * 0.75, 0);
+      pivot.add(label);
+      labelSprites.push(label);
+
+      segmentObjects.push({
+        level,
+        pivot,
+        disc,
+        nucleus,
+        vertebra,
+        label,
+        selected: false,
+        currentAngle: neutralAngles[level.disc] ?? 0,
+        targetAngle: neutralAngles[level.disc] ?? 0,
+        loadIndex: 1.0,
+        wedge: 0,
+        bulge: 0,
+        nucleusShift: 0,
+      });
+
+      currentParent = pivot;
+      currentTopY = level.discH + level.bodyH;
+    }
+
+    const skull = new THREE.Mesh(new THREE.SphereGeometry(0.95, 22, 22), new THREE.MeshPhongMaterial({ color: 0xf7f1e5, shininess: 45 }));
+    skull.position.y = currentTopY + 1.0;
+    skull.position.z = 0.15;
+    currentParent.add(skull);
+    const jaw = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.35, 0.6), new THREE.MeshPhongMaterial({ color: 0xf7f1e5 }));
+    jaw.position.set(0, currentTopY + 0.35, 0.42);
+    currentParent.add(jaw);
+
+    const presets = {
+      standing: { name: 'Standing', trunkFlex: 0, pelvicTilt: 0, externalLoad: 0, lumbarSupport: 0, showChair: false },
+      uprightSitting: { name: 'Upright sitting', trunkFlex: 10, pelvicTilt: 8, externalLoad: 0, lumbarSupport: 55, showChair: true },
+      slumpedSitting: { name: 'Slumped sitting', trunkFlex: 25, pelvicTilt: 14, externalLoad: 0, lumbarSupport: 5, showChair: true },
+      forwardBend: { name: 'Forward bend', trunkFlex: 48, pelvicTilt: 12, externalLoad: 0, lumbarSupport: 0, showChair: false },
+      extension: { name: 'Extension', trunkFlex: -14, pelvicTilt: -7, externalLoad: 0, lumbarSupport: 0, showChair: false },
+      bendAndLift: { name: 'Bend + lift', trunkFlex: 42, pelvicTilt: 10, externalLoad: 12, lumbarSupport: 0, showChair: false },
+    };
+
+    const ui = {
+      presetButtons: document.getElementById('presetButtons'),
+      trunkFlex: document.getElementById('trunkFlex'),
+      pelvicTilt: document.getElementById('pelvicTilt'),
+      externalLoad: document.getElementById('externalLoad'),
+      lumbarSupport: document.getElementById('lumbarSupport'),
+      showChair: document.getElementById('showChair'),
+      showLabels: document.getElementById('showLabels'),
+      showNuclei: document.getElementById('showNuclei'),
+      trunkFlexVal: document.getElementById('trunkFlexVal'),
+      pelvicTiltVal: document.getElementById('pelvicTiltVal'),
+      externalLoadVal: document.getElementById('externalLoadVal'),
+      lumbarSupportVal: document.getElementById('lumbarSupportVal'),
+      lumbarFlexDisplay: document.getElementById('lumbarFlexDisplay'),
+      loadDisplay: document.getElementById('loadDisplay'),
+      discName: document.getElementById('discName'),
+      discSummary: document.getElementById('discSummary'),
+      discLoad: document.getElementById('discLoad'),
+      discWedge: document.getElementById('discWedge'),
+      discBulge: document.getElementById('discBulge'),
+      discShift: document.getElementById('discShift'),
+      hoverTag: document.getElementById('hoverTag'),
+    };
+
+    const statusBanner = document.getElementById('statusBanner');
+    function showStatus(message, isError = false) {
+      statusBanner.style.display = 'block';
+      statusBanner.innerHTML = `<strong>${isError ? 'Viewer issue:' : 'Viewer note:'}</strong> ${message}`;
+      statusBanner.style.borderColor = isError ? 'rgba(255,125,125,0.35)' : 'rgba(125,196,255,0.35)';
+    }
+
+    if (!window.WebGLRenderingContext) {
+      showStatus('This browser does not support WebGL, so the 3D model cannot render here. Try a current version of Chrome, Edge, Firefox, or Safari.', true);
+    }
+
+    let activePreset = 'standing';
+    let selectedSegment = segmentObjects.find(s => s.level.disc === 'L4-L5') ?? segmentObjects[0];
+
+    function buildPresetButtons() {
+      ui.presetButtons.innerHTML = '';
+      Object.entries(presets).forEach(([key, preset]) => {
+        const btn = document.createElement('button');
+        btn.textContent = preset.name;
+        btn.dataset.key = key;
+        btn.addEventListener('click', () => applyPreset(key));
+        ui.presetButtons.appendChild(btn);
+      });
+      refreshPresetButtons();
+    }
+
+    function refreshPresetButtons() {
+      [...ui.presetButtons.children].forEach(btn => btn.classList.toggle('active', btn.dataset.key === activePreset));
+    }
+
+    function setSliderValues(state) {
+      ui.trunkFlex.value = state.trunkFlex;
+      ui.pelvicTilt.value = state.pelvicTilt;
+      ui.externalLoad.value = state.externalLoad;
+      ui.lumbarSupport.value = state.lumbarSupport;
+      ui.showChair.checked = !!state.showChair;
+      updateValueText();
+    }
+
+    function applyPreset(key) {
+      activePreset = key;
+      setSliderValues(presets[key]);
+      refreshPresetButtons();
+      updateTargetsFromUI();
+    }
+
+    function updateValueText() {
+      ui.trunkFlexVal.textContent = `${ui.trunkFlex.value}°`;
+      ui.pelvicTiltVal.textContent = `${ui.pelvicTilt.value}°`;
+      ui.externalLoadVal.textContent = `${ui.externalLoad.value} kg`;
+      ui.lumbarSupportVal.textContent = `${ui.lumbarSupport.value}%`;
+    }
+
+    function linearMap(val, a, b, c, d) {
+      const t = (val - a) / (b - a);
+      return c + (d - c) * t;
+    }
+
+    function getUIState() {
+      return {
+        trunkFlex: parseFloat(ui.trunkFlex.value),
+        pelvicTilt: parseFloat(ui.pelvicTilt.value),
+        externalLoad: parseFloat(ui.externalLoad.value),
+        lumbarSupport: parseFloat(ui.lumbarSupport.value) / 100,
+        showChair: ui.showChair.checked,
+      };
+    }
+
+    function postureDeltaForLevel(levelName, uiState) {
+      const tf = uiState.trunkFlex;
+      const pt = uiState.pelvicTilt;
+      const isLumbar = levelName.startsWith('L');
+      const isThoracic = levelName.startsWith('T') || levelName === 'T12-L1';
+      const isCervical = levelName.startsWith('C') || levelName === 'C7-T1';
+
+      const lumbarBias = linearMap(tf, -20, 70, -10, 38) + pt * 0.55;
+      const thoracicBias = linearMap(tf, -20, 70, -6, 20) + pt * 0.15;
+      const cervicalBias = linearMap(tf, -20, 70, 4, -16) - pt * 0.10;
+
+      if (isLumbar) {
+        const distrib = { 'L1-L2': 0.22, 'L2-L3': 0.24, 'L3-L4': 0.22, 'L4-L5': 0.18, 'L5-S1': 0.14 };
+        return lumbarBias * distrib[levelName];
+      }
+      if (isThoracic) {
+        const lower = ['T12-L1','T11-T12','T10-T11','T9-T10','T8-T9'];
+        const mid = ['T7-T8','T6-T7','T5-T6','T4-T5'];
+        const upper = ['T3-T4','T2-T3','T1-T2','C7-T1'];
+        if (lower.includes(levelName)) return thoracicBias * 0.11;
+        if (mid.includes(levelName)) return thoracicBias * 0.08;
+        if (upper.includes(levelName)) return thoracicBias * 0.05;
+      }
+      if (isCervical) {
+        return cervicalBias * 0.18;
+      }
+      return 0;
+    }
+
+    function estimateLumbarFlexDegrees() {
+      return lumbarOrder.reduce((sum, key) => {
+        const seg = segmentObjects.find(s => s.level.disc === key);
+        return sum + ((seg?.targetAngle ?? 0) - (neutralAngles[key] ?? 0));
+      }, 0);
+    }
+
+    function estimateDiscLoad(levelName, uiState) {
+      const lumbarFlex = Math.max(0, estimateLumbarFlexDegrees());
+      const extensionBias = Math.min(0, estimateLumbarFlexDegrees());
+      const sittingPenalty = uiState.showChair ? 0.22 : 0.0;
+      const supportRelief = uiState.showChair ? 0.15 * uiState.lumbarSupport : 0.0;
+      const loadPenalty = 0.035 * uiState.externalLoad;
+      const flexPenalty = 0.0105 * lumbarFlex;
+      const extensionRelief = -0.005 * extensionBias;
+      let base = 1.0 + sittingPenalty + flexPenalty + loadPenalty - supportRelief + extensionRelief;
+      base = THREE.MathUtils.clamp(base, 0.55, 2.8);
+
+      if (lumbarWeight[levelName]) return base * lumbarWeight[levelName];
+      if (levelName.startsWith('T')) return 0.72 + (base - 1) * 0.42;
+      if (levelName.startsWith('C')) return 0.60 + (base - 1) * 0.26;
+      return base;
+    }
+
+    function updateTargetsFromUI() {
+      updateValueText();
+      const state = getUIState();
+      chairGroup.visible = state.showChair;
+
+      sacrum.rotation.x = THREE.MathUtils.degToRad(state.pelvicTilt * -0.7);
+      leftFemur.rotation.z = state.showChair ? Math.PI / 2.0 : 0;
+      rightFemur.rotation.z = state.showChair ? Math.PI / 2.0 : 0;
+      leftFemur.rotation.x = state.showChair ? -0.35 : 0.02;
+      rightFemur.rotation.x = state.showChair ? -0.35 : 0.02;
+      leftFemur.position.set(-1.32, -0.52, state.showChair ? -0.5 : 0.55);
+      rightFemur.position.set(1.32, -0.52, state.showChair ? -0.5 : 0.55);
+
+      for (const seg of segmentObjects) {
+        const delta = postureDeltaForLevel(seg.level.disc, state);
+        seg.targetAngle = (neutralAngles[seg.level.disc] ?? 0) + delta;
+      }
+      const l45 = segmentObjects.find(s => s.level.disc === 'L4-L5');
+      if (l45) ui.loadDisplay.textContent = `${estimateDiscLoad('L4-L5', state).toFixed(2)}×`;
+      ui.lumbarFlexDisplay.textContent = `${estimateLumbarFlexDegrees().toFixed(0)}°`;
+      refreshInspector();
+    }
+
+    for (const el of [ui.trunkFlex, ui.pelvicTilt, ui.externalLoad, ui.lumbarSupport, ui.showChair, ui.showLabels, ui.showNuclei]) {
+      el.addEventListener('input', () => {
+        activePreset = '';
+        refreshPresetButtons();
+        updateTargetsFromUI();
+      });
+      el.addEventListener('change', () => {
+        activePreset = '';
+        refreshPresetButtons();
+        updateTargetsFromUI();
+      });
+    }
+
+    function refreshSelectionVisuals() {
+      for (const seg of segmentObjects) {
+        seg.disc.material.specular = new THREE.Color(seg === selectedSegment ? 0xffffff : 0x111111);
+        seg.disc.material.shininess = seg === selectedSegment ? 90 : 50;
+      }
+    }
+
+    function refreshInspector() {
+      if (!selectedSegment) return;
+      refreshSelectionVisuals();
+      const s = selectedSegment;
+      ui.discName.textContent = s.level.disc;
+      const direction = s.wedge > 0.012 ? 'posterior bias in flexion' : s.wedge < -0.012 ? 'anterior bias in extension' : 'near-neutral distribution';
+      const summaryRegion = s.level.region === 'lumbar' ? 'lumbar' : s.level.region;
+      ui.discSummary.textContent = `This ${summaryRegion} disc is showing ${direction}. Relative load rises with trunk flexion, unsupported sitting, and external load, while support and extension reduce it.`;
+      ui.discLoad.textContent = `${s.loadIndex.toFixed(2)}×`;
+      ui.discWedge.textContent = `${(s.wedge * 100).toFixed(1)}%`;
+      ui.discBulge.textContent = s.bulge > 0.001 ? 'Posterior' : s.bulge < -0.001 ? 'Anterior' : 'Symmetric';
+      ui.discShift.textContent = `${(Math.abs(s.nucleusShift) * 10).toFixed(1)} mm ${s.nucleusShift > 0.003 ? 'posterior' : s.nucleusShift < -0.003 ? 'anterior' : ''}`.trim();
+    }
+
+    function updateSpineKinematics(dt) {
+      const uiState = getUIState();
+      for (const seg of segmentObjects) {
+        seg.currentAngle = THREE.MathUtils.lerp(seg.currentAngle, seg.targetAngle, 1 - Math.pow(0.001, dt));
+        seg.pivot.rotation.x = THREE.MathUtils.degToRad(seg.currentAngle);
+
+        const deltaAngle = seg.currentAngle - (neutralAngles[seg.level.disc] ?? 0);
+        const wedge = THREE.MathUtils.clamp(deltaAngle * 0.0065, -0.26, 0.26);
+        const regionBulgeGain = seg.level.region === 'lumbar' ? 0.020 : seg.level.region === 'thoracic' ? 0.011 : 0.008;
+        const loadIndex = estimateDiscLoad(seg.level.disc, uiState);
+        const bulge = THREE.MathUtils.clamp(deltaAngle * (regionBulgeGain / 16) + (loadIndex - 1) * 0.025, -0.13, 0.16);
+        const signedBulge = deltaAngle >= 0 ? Math.abs(bulge) : -Math.abs(bulge);
+        seg.loadIndex = loadIndex;
+        seg.wedge = wedge;
+        seg.bulge = signedBulge;
+        seg.nucleusShift = THREE.MathUtils.clamp(deltaAngle * 0.0065, -0.10, 0.10);
+
+        const geo = createDiscGeometry(seg.level.discR, seg.level.discH, wedge, signedBulge, 44);
+        seg.disc.geometry.dispose();
+        seg.disc.geometry = geo;
+        seg.disc.material.color.copy(discColor(loadIndex));
+        seg.nucleus.position.set(0, seg.level.discH / 2, -seg.nucleusShift * 0.55);
+        seg.nucleus.visible = ui.showNuclei.checked;
+        seg.label.visible = ui.showLabels.checked;
+      }
+
+      ui.lumbarFlexDisplay.textContent = `${estimateLumbarFlexDegrees().toFixed(0)}°`;
+      const l45 = segmentObjects.find(s => s.level.disc === 'L4-L5');
+      if (l45) ui.loadDisplay.textContent = `${l45.loadIndex.toFixed(2)}×`;
+      refreshInspector();
+    }
+
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    let hoveredSegment = null;
+
+    function pointerMove(ev) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
+      ui.hoverTag.style.left = `${ev.clientX}px`;
+      ui.hoverTag.style.top = `${ev.clientY}px`;
+    }
+    renderer.domElement.addEventListener('pointermove', pointerMove);
+
+    renderer.domElement.addEventListener('click', () => {
+      if (hoveredSegment) {
+        selectedSegment = hoveredSegment;
+        refreshInspector();
+      }
+    });
+
+    renderer.domElement.addEventListener('pointerleave', () => {
+      hoveredSegment = null;
+      ui.hoverTag.style.display = 'none';
+      segmentObjects.forEach(s => s.disc.material.emissive.setHex(0x000000));
+    });
+
+    function updateHover() {
+      raycaster.setFromCamera(pointer, camera);
+      const intersects = raycaster.intersectObjects(segmentObjects.map(s => s.disc), false);
+      segmentObjects.forEach(s => s.disc.material.emissive.setHex(0x000000));
+      if (intersects.length) {
+        const obj = intersects[0].object;
+        hoveredSegment = segmentObjects.find(s => s.disc === obj) || null;
+        if (hoveredSegment) {
+          ui.hoverTag.style.display = 'block';
+          ui.hoverTag.textContent = hoveredSegment.level.disc;
+          hoveredSegment.disc.material.emissive.setHex(0x13231f);
+          return;
+        }
+      }
+      hoveredSegment = null;
+      ui.hoverTag.style.display = 'none';
+    }
+
+    function onResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+    window.addEventListener('resize', onResize);
+
+    window.addEventListener('error', (event) => {
+      showStatus(event.message || 'A JavaScript error prevented the viewer from starting.', true);
+    });
+
+    buildPresetButtons();
+    applyPreset('standing');
+    selectedSegment = segmentObjects.find(s => s.level.disc === 'L4-L5');
+    refreshInspector();
+
+    let last = performance.now();
+    function animate(now) {
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      controls.update();
+      updateSpineKinematics(dt);
+      updateHover();
+      renderer.render(scene, camera);
+      requestAnimationFrame(animate);
+    }
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>

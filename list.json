@@ -1,0 +1,36 @@
+[
+	{
+		"name": "Codex 3D Spine",
+		"path": "codex-spine",
+		"desc": "Interactive 3D spine viewer built with Codex",
+		"tag": "llm",
+		"category": "HTML/JS"
+	},
+	{
+		"name": "Claude 3D Spine",
+		"path": "claude-spine",
+		"desc": "Interactive 3D spine viewer built with Claude",
+		"tag": "llm",
+		"category": "HTML/JS"
+	},
+	{
+		"name": "milo",
+		"url": "https://github.com/anthonymatsas/milo",
+		"desc": "cli tool exposing apples on device foundation models",
+		"tag": "llm",
+		"category": "CLI"
+	},
+	{
+		"name": "posty",
+		"url": "https://github.com/anthonymatsas/posty/releases/download/v0.0.7/posty_0.0.7_Darwin_arm64.tar.gz",
+		"desc": "posty is a fast, simple HTTP client for the command line.<br/>Built in Go as a lightweight alternative to Postman.<br/>basicaly a 'fancy' curl",
+		"tag": ["private repo", "direct download"],
+		"category": "CLI"
+	},
+	{
+		"name": "mdv",
+		"desc": "mdv is a local markdown editor + live preview app shipped as a single Go binary. allows for local <b>live</b> collaboration with your agent(s) through markdown files",
+		"category": "CLI",
+		"tag": "private repo"
+	}
+]

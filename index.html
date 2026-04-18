@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>tonys stuff</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      max-width: 600px;
+      padding: 2rem;
+      color: #24292f;
+      background: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .desc-header {
+      color: #656d76;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .disclaimer {
+      color: #9a6700;
+      background: #fff8c5;
+      border: 1px solid #eac54f;
+      border-radius: 4px;
+      padding: 0.15rem 0.35rem;
+      font-size: 0.6rem;
+      margin-bottom: 1rem;
+    }
+
+    input[type="search"] {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+      border: 1px solid #d0d7de;
+      border-radius: 6px;
+      outline: none;
+      margin-bottom: 1.5rem;
+    }
+
+    input[type="search"]:focus {
+      border-color: #0969da;
+      box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.15);
+    }
+
+    ul {
+      list-style: none;
+    }
+
+    ul li {
+      border-bottom: 1px solid #d8dee4;
+    }
+
+    ul li a,
+    ul li .item-static {
+      display: block;
+      padding: 0.75rem 0.25rem;
+      color: #0969da;
+      text-decoration: none;
+    }
+
+    ul li .item-static {
+      color: #24292f;
+    }
+
+    ul li .desc {
+      display: block;
+      font-size: 0.85rem;
+      color: #656d76;
+      font-weight: normal;
+    }
+
+    ul li a:hover {
+      background: #f6f8fa;
+    }
+
+    .tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: 10px;
+      margin-left: 0.35rem;
+      vertical-align: middle;
+      font-weight: 500;
+    }
+
+    h2.category {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #656d76;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      padding: 0.75rem 0 0.25rem;
+      margin-top: 0.5rem;
+    }
+
+    .empty {
+      color: #656d76;
+      padding: 1rem 0;
+    }
+
+    footer {
+      margin-top: auto;
+      padding-top: 1rem;
+      font-size: 0.8rem;
+      color: #656d76;
+    }
+
+    footer a {
+      color: #656d76;
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      color: #0969da;
+    }
+
+    footer svg {
+      width: 16px;
+      height: 16px;
+      vertical-align: middle;
+      fill: currentColor;
+    }
+  </style>
+</head>
+<body>
+  <h1>stuff</h1>
+  <p class="desc-header">A directory of personal projects, some built with LLMs. Mostly a quick way to find and access things when I need them.</p>
+  <p class="disclaimer">Heads up: this page itself is LLM-generated slop I haven't reviewed. The only human touch is maintaining the list.</p>
+  <input type="search" id="search" placeholder="search by name or tag..." autofocus>
+  <div id="tool-list"></div>
+
+  <footer><a href="https://amatsas.com" target="_blank">am</a> &copy; <span id="year"></span> &middot; <a href="https://github.com/anthonymatsas" target="_blank" aria-label="github"><svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a></footer>
+
+  <script>
+    const listEl = document.getElementById("tool-list");
+    const searchEl = document.getElementById("search");
+    let tools = [];
+
+    function render(filter) {
+      const term = (filter || "").toLowerCase();
+      const matched = tools.filter(t => {
+        if (t.name.toLowerCase().includes(term)) return true;
+        const tags = Array.isArray(t.tag) ? t.tag : t.tag ? [t.tag] : [];
+        return tags.some(tag => tag.toLowerCase().includes(term));
+      });
+
+      if (tools.length === 0) {
+        listEl.innerHTML = '<p class="empty">No tools yet.</p>';
+        return;
+      }
+
+      if (matched.length === 0) {
+        listEl.innerHTML = '<p class="empty">No matches.</p>';
+        return;
+      }
+
+      const tagColor = tag => {
+        let h = 0;
+        for (let i = 0; i < tag.length; i++) h = (h * 31 + tag.charCodeAt(i)) >>> 0;
+        const hue = h % 360;
+        return `background: hsl(${hue}, 65%, 92%); color: hsl(${hue}, 55%, 30%);`;
+      };
+
+      const tagHtml = t => {
+        if (!t.tag) return "";
+        const tags = Array.isArray(t.tag) ? t.tag : [t.tag];
+        return tags.map(tag => `<span class="tag" style="${tagColor(tag)}">${tag}</span>`).join("");
+      };
+
+      const itemHtml = t => {
+        const href = t.url || (t.path ? `${t.path}/` : null);
+        const inner = `${t.name}${tagHtml(t)}${t.desc ? `<span class="desc">${t.desc}</span>` : ""}`;
+        return href
+          ? `<li><a href="${href}" target="_blank">${inner}</a></li>`
+          : `<li><span class="item-static">${inner}</span></li>`;
+      };
+
+      const categories = [...new Set(matched.map(t => t.category).filter(Boolean))].sort();
+
+      let html = "";
+      for (const cat of categories) {
+        const items = matched.filter(t => t.category === cat).sort((a, b) => a.name.localeCompare(b.name));
+        html += `<h2 class="category">${cat}</h2><ul>${items.map(itemHtml).join("")}</ul>`;
+      }
+
+      const uncategorized = matched.filter(t => !t.category);
+      if (uncategorized.length > 0) {
+        html += `<ul>${uncategorized.map(itemHtml).join("")}</ul>`;
+      }
+
+      listEl.innerHTML = html;
+    }
+
+    fetch("list.json")
+      .then(r => r.json())
+      .then(data => { tools = data; render(); });
+
+    document.getElementById("year").textContent = new Date().getFullYear();
+    searchEl.addEventListener("input", e => render(e.target.value));
+  </script>
+</body>
+</html>
