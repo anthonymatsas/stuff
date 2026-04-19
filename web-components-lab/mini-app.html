@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Feedback Mini-App</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      max-width: 560px;
+      margin: 40px auto;
+      padding: 0 20px;
+      color: #1a1d29;
+    }
+    h1 { margin: 0 0 8px; }
+    p.lede { color: #5b6478; margin: 0 0 24px; }
+    label { display: block; font-size: 13px; color: #5b6478; margin: 12px 0 4px; }
+    input[type=text] {
+      width: 100%; padding: 8px 10px;
+      border: 1px solid #e3e6ee; border-radius: 6px;
+      font: inherit; font-size: 14px;
+    }
+    button.submit {
+      margin-top: 16px; padding: 8px 16px;
+      background: #4f46e5; color: white; border: 0;
+      border-radius: 6px; cursor: pointer; font-size: 14px;
+    }
+    .entries { margin-top: 24px; display: flex; flex-direction: column; gap: 8px; }
+
+    /* Hide custom elements until their JS has registered them.
+       Prevents a flash of unstyled placeholders. */
+    :not(:defined) { visibility: hidden; }
+  </style>
+</head>
+<body>
+
+  <h1>Feedback</h1>
+  <p class="lede">A complete page using two custom inputs, a custom card, and a chart — no build step.</p>
+
+  <form id="form">
+    <label for="name">Name</label>
+    <input id="name" name="name" type="text" required>
+
+    <label>Subscribe to updates</label>
+    <toggle-switch name="subscribe" value="off"></toggle-switch>
+
+    <label>Rating</label>
+    <rating-stars name="rating" value="3" max="5"></rating-stars>
+
+    <button class="submit" type="submit">Add feedback</button>
+  </form>
+
+  <h2 style="margin-top:32px; font-size:16px;">Submitted</h2>
+  <div class="entries" id="entries"></div>
+
+  <h2 style="margin-top:32px; font-size:16px;">Rating distribution</h2>
+  <bar-chart id="chart" data="[0,0,0,0,0]"></bar-chart>
+
+  <!-- Component definitions. In a real project, you might split these
+       into separate files and load with <script type="module" src="..."> -->
+  <script>
+    class ToggleSwitch extends HTMLElement {
+      static formAssociated = true;
+      #internals; #on = false;
+
+      constructor() {
+        super();
+        this.#internals = this.attachInternals();
+        this.attachShadow({ mode: 'open' });
+      }
+
+      connectedCallback() {
+        this.#on = this.getAttribute('value') === 'on';
+        this.render();
+        this.shadowRoot.querySelector('button').onclick = e => {
+          e.preventDefault();
+          this.#on = !this.#on;
+          this.#internals.setFormValue(this.#on ? 'on' : 'off');
+          this.render();
+        };
+        this.#internals.setFormValue(this.#on ? 'on' : 'off');
+      }
+
+      formResetCallback() {
+        this.#on = this.getAttribute('value') === 'on';
+        this.#internals.setFormValue(this.#on ? 'on' : 'off');
+        this.render();
+      }
+
+      render() {
+        this.shadowRoot.innerHTML = `
+          <style>
+            button {
+              width: 44px; height: 24px; border: 0;
+              background: ${this.#on ? '#4f46e5' : '#cbd5e1'};
+              border-radius: 999px; cursor: pointer;
+              position: relative; transition: background .15s;
+            }
+            button::after {
+              content: ''; position: absolute; top: 2px;
+              left: ${this.#on ? '22px' : '2px'};
+              width: 20px; height: 20px;
+              background: white; border-radius: 50%;
+              transition: left .15s;
+            }
+          </style>
+          <button type="button"></button>
+        `;
+      }
+    }
+    customElements.define('toggle-switch', ToggleSwitch);
+
+    class RatingStars extends HTMLElement {
+      static formAssociated = true;
+      static observedAttributes = ['value', 'max'];
+      #internals;
+
+      constructor() {
+        super();
+        this.#internals = this.attachInternals();
+        this.attachShadow({ mode: 'open' });
+      }
+
+      connectedCallback() { this.render(); this.#sync(); }
+      attributeChangedCallback() { if (this.isConnected) { this.render(); this.#sync(); } }
+      formResetCallback() { this.render(); this.#sync(); }
+      #sync() { this.#internals.setFormValue(this.getAttribute('value') || '0'); }
+
+      render() {
+        const max = +(this.getAttribute('max') || 5);
+        const val = +(this.getAttribute('value') || 0);
+        const stars = Array.from({ length: max }, (_, i) => `
+          <button type="button" data-i="${i + 1}">${i < val ? '\u2605' : '\u2606'}</button>
+        `).join('');
+        this.shadowRoot.innerHTML = `
+          <style>button { background:none; border:0; cursor:pointer; font-size:22px; color:#f59e0b; padding:2px; }</style>
+          ${stars}
+        `;
+        this.shadowRoot.querySelectorAll('button').forEach(b => {
+          b.onclick = () => this.setAttribute('value', b.dataset.i);
+        });
+      }
+    }
+    customElements.define('rating-stars', RatingStars);
+
+    class FeedbackCard extends HTMLElement {
+      static observedAttributes = ['name', 'rating', 'subscribe'];
+      connectedCallback() { this.attachShadow({ mode: 'open' }); this.render(); }
+      attributeChangedCallback() { if (this.shadowRoot) this.render(); }
+      render() {
+        const stars = '\u2605'.repeat(+this.getAttribute('rating') || 0);
+        this.shadowRoot.innerHTML = `
+          <style>
+            .card {
+              border: 1px solid #e3e6ee; border-radius: 8px;
+              padding: 12px 14px; display: flex;
+              justify-content: space-between; align-items: center;
+            }
+            .name { font-weight: 600; }
+            .meta { font-size: 12px; color: #5b6478; }
+            .stars { color: #f59e0b; font-size: 14px; }
+          </style>
+          <div class="card">
+            <div>
+              <div class="name">${this.getAttribute('name')}</div>
+              <div class="meta">subscribe: ${this.getAttribute('subscribe')}</div>
+            </div>
+            <div class="stars">${stars}</div>
+          </div>
+        `;
+      }
+    }
+    customElements.define('feedback-card', FeedbackCard);
+
+    class BarChart extends HTMLElement {
+      static observedAttributes = ['data'];
+      connectedCallback() { this.attachShadow({ mode: 'open' }); this.render(); }
+      attributeChangedCallback() { if (this.shadowRoot) this.render(); }
+      render() {
+        let data = [];
+        try { data = JSON.parse(this.getAttribute('data') || '[]'); } catch {}
+        const w = 360, h = 120, pad = 8;
+        const max = Math.max(...data, 1);
+        const bw = data.length ? (w - pad * 2) / data.length : 0;
+        const bars = data.map((v, i) => {
+          const bh = (v / max) * (h - pad * 2);
+          return `
+            <rect x="${pad + i * bw + 2}" y="${h - pad - bh}"
+              width="${Math.max(bw - 4, 1)}" height="${bh}"
+              fill="#4f46e5" rx="3"></rect>
+            <text x="${pad + i * bw + bw / 2}" y="${h + 4}"
+              text-anchor="middle" font-size="10" fill="#5b6478">${i + 1}\u2605</text>
+          `;
+        }).join('');
+        this.shadowRoot.innerHTML = `
+          <style>:host { display:block; }</style>
+          <svg viewBox="0 0 ${w} ${h + 16}" width="100%">${bars}</svg>
+        `;
+      }
+    }
+    customElements.define('bar-chart', BarChart);
+
+    // Page logic — wires the form to the list and chart.
+    const form = document.getElementById('form');
+    const entries = document.getElementById('entries');
+    const chart = document.getElementById('chart');
+    const counts = [0, 0, 0, 0, 0];
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(form));
+
+      const card = document.createElement('feedback-card');
+      card.setAttribute('name', data.name);
+      card.setAttribute('rating', data.rating);
+      card.setAttribute('subscribe', data.subscribe || 'off');
+      entries.prepend(card);
+
+      const r = +data.rating;
+      if (r >= 1 && r <= 5) counts[r - 1]++;
+      chart.setAttribute('data', JSON.stringify(counts));
+
+      form.reset();
+    });
+  </script>
+</body>
+</html>

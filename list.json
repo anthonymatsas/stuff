@@ -28,6 +28,13 @@
 		"category": "HTML/JS"
 	},
 	{
+		"name": "Web Components Lab",
+		"path": "web-components-lab",
+		"desc": "Hands-on tour of vanilla web components: shadow DOM, slots, events, form-associated elements, and SVG charts. No build step.",
+		"tag": ["learning", "llm"],
+		"category": "HTML/JS"
+	},
+	{
 		"name": "milo",
 		"url": "https://github.com/anthonymatsas/milo",
 		"desc": "cli tool exposing apples on device foundation models",

@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web Components Lab</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    :root {
+      --bg: #f7f8fb;
+      --surface: #ffffff;
+      --ink: #1a1d29;
+      --ink-soft: #5b6478;
+      --line: #e3e6ee;
+      --accent: #4f46e5;
+      --accent-soft: #eef2ff;
+      --code-bg: #1e1e2e;
+      --code-ink: #cdd6f4;
+      --code-key: #f38ba8;
+      --code-str: #a6e3a1;
+      --code-com: #6c7086;
+      --code-fn: #89b4fa;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.6;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    aside {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 32px 20px;
+      border-right: 1px solid var(--line);
+      overflow-y: auto;
+      background: var(--surface);
+    }
+
+    aside h2 {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ink-soft);
+      margin: 0 0 12px;
+    }
+
+    aside ol {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      counter-reset: nav;
+    }
+
+    aside li {
+      counter-increment: nav;
+    }
+
+    aside a {
+      display: block;
+      padding: 8px 12px;
+      color: var(--ink);
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    aside a::before {
+      content: counter(nav) ". ";
+      color: var(--ink-soft);
+    }
+
+    aside a:hover {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    main {
+      padding: 48px 56px;
+      min-width: 0;
+    }
+
+    header.hero {
+      margin-bottom: 48px;
+    }
+
+    header.hero h1 {
+      font-size: 36px;
+      margin: 0 0 12px;
+      letter-spacing: -0.02em;
+    }
+
+    header.hero p {
+      color: var(--ink-soft);
+      max-width: 640px;
+      margin: 0;
+    }
+
+    .pillars {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .pillar {
+      background: var(--accent-soft);
+      border-radius: 8px;
+      padding: 14px 16px;
+      font-size: 14px;
+    }
+
+    .pillar strong {
+      display: block;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+
+    section.example {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 32px;
+      margin-bottom: 32px;
+    }
+
+    section.example > h2 {
+      margin: 0 0 8px;
+      font-size: 22px;
+      letter-spacing: -0.01em;
+    }
+
+    section.example > p.lede {
+      margin: 0 0 24px;
+      color: var(--ink-soft);
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .pane {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .pane-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--ink-soft);
+      margin-bottom: 6px;
+    }
+
+    .demo {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 20px;
+      background: #fafbff;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    pre {
+      background: var(--code-bg);
+      color: var(--code-ink);
+      padding: 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 0 0 12px;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    pre:last-child { margin-bottom: 0; }
+
+    code {
+      font-family: "SF Mono", Menlo, Consolas, monospace;
+    }
+
+    .tk { color: var(--code-key); }
+    .ts { color: var(--code-str); }
+    .tc { color: var(--code-com); }
+    .tf { color: var(--code-fn); }
+
+    .note {
+      background: #fff8e1;
+      border-left: 3px solid #f59e0b;
+      padding: 12px 16px;
+      border-radius: 4px;
+      font-size: 14px;
+      margin-top: 16px;
+    }
+
+    .note strong { color: #92400e; }
+
+    button.action {
+      background: var(--accent);
+      color: white;
+      border: 0;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    button.action:hover { background: #4338ca; }
+    button.action.secondary { background: #e5e7eb; color: var(--ink); }
+    button.action.secondary:hover { background: #d1d5db; }
+
+    input.text, select.text {
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+      width: 100%;
+    }
+
+    label.field {
+      display: block;
+      font-size: 13px;
+      color: var(--ink-soft);
+      margin-bottom: 4px;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      aside {
+        position: static;
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      main { padding: 32px 20px; }
+      .split { grid-template-columns: 1fr; }
+      .pillars { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <h2>Examples</h2>
+      <ol>
+        <li><a href="#hello">Hello Element</a></li>
+        <li><a href="#shadow">Shadow DOM</a></li>
+        <li><a href="#attrs">Reactive Attributes</a></li>
+        <li><a href="#slots">Slots & Composition</a></li>
+        <li><a href="#events">Custom Events</a></li>
+        <li><a href="#form-input">Form-Associated Input</a></li>
+        <li><a href="#form-demo">Full Form Demo</a></li>
+        <li><a href="#bar-chart">SVG Bar Chart</a></li>
+        <li><a href="#sparkline">Live Sparkline</a></li>
+        <li><a href="#mini-app">Putting It Together</a></li>
+      </ol>
+    </aside>
+
+    <main>
+      <header class="hero">
+        <h1>Web Components Lab</h1>
+        <p>
+          Vanilla web components, no framework, no build step. Each example below
+          shows a working component on the left and the source you'd write on the right.
+          View page source — every example runs from this single HTML file.
+        </p>
+        <div class="pillars">
+          <div class="pillar"><strong>Custom Elements</strong>Define your own HTML tags with their own behavior.</div>
+          <div class="pillar"><strong>Shadow DOM</strong>Encapsulated DOM + styles that don't leak in or out.</div>
+          <div class="pillar"><strong>Templates</strong>Inert markup you can stamp out on demand.</div>
+        </div>
+      </header>
+
+      <!-- ============================================================ -->
+      <section class="example" id="hello">
+        <h2>1. Hello Element</h2>
+        <p class="lede">
+          The simplest custom element: extend <code>HTMLElement</code>, define behavior in
+          <code>connectedCallback</code> (fires when the element is inserted into the DOM),
+          register a tag name with <code>customElements.define</code>. Tag names must contain a hyphen.
+        </p>
+
+        <div class="split">
+          <div class="pane">
+            <div class="pane-label">Demo</div>
+            <div class="demo">
+              <hello-element name="Tony"></hello-element>
+              <hello-element></hello-element>
+            </div>
+          </div>
+          <div class="pane">
+            <div class="pane-label">Code</div>
+<pre><code><span class="tk">class</span> <span class="tf">HelloElement</span> <span class="tk">extends</span> HTMLElement {
+  <span class="tf">connectedCallback</span>() {
+    <span class="tk">const</span> name = <span class="tk">this</span>.getAttribute(<span class="ts">'name'</span>) || <span class="ts">'world'</span>;
+    <span class="tk">this</span>.textContent = <span class="ts">`Hello, ${name}!`</span>;
+  }
+}
+customElements.define(<span class="ts">'hello-element'</span>, HelloElement);</code></pre>
+<pre><code><span class="tc">&lt;!-- usage --&gt;</span>
+&lt;hello-element name=<span class="ts">"Tony"</span>&gt;&lt;/hello-element&gt;
+&lt;hello-element&gt;&lt;/hello-element&gt;</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ -->
+      <section class="example" id="shadow">
+        <h2>2. Shadow DOM</h2>
+        <p class="lede">
+          Attach a shadow root and the element gets its own DOM tree. Styles inside
+          stay inside; styles outside don't reach in. The <code>h3</code> below is bright red
+          inside the component but normal everywhere else on this page.
+        </p>
+
+        <div class="split">
+          <div class="pane">
+            <div class="pane-label">Demo</div>
+            <div class="demo">
+              <styled-card title="Inside the shadow">This h3 is red, padding is custom — and none of it leaks out.</styled-card>
+              <h3 style="margin:0;">Same h3 tag outside — unaffected.</h3>
+            </div>
+          </div>
+          <div class="pane">
+            <div class="pane-label">Code</div>
+<pre><code><span class="tk">class</span> <span class="tf">StyledCard</span> <span class="tk">extends</span> HTMLElement {
+  <span class="tf">connectedCallback</span>() {
+    <span class="tk">const</span> shadow = <span class="tk">this</span>.attachShadow({ mode: <span class="ts">'open'</span> });
+    shadow.innerHTML = <span class="ts">`
+      &lt;style&gt;
+        .card { padding: 16px; background: #eef2ff;
+                border-radius: 8px; }
+        h3    { color: tomato; margin: 0 0 8px; }
+      &lt;/style&gt;
+      &lt;div class="card"&gt;
+        &lt;h3&gt;${<span class="tk">this</span>.getAttribute(<span class="ts">'title'</span>)}&lt;/h3&gt;
+        &lt;slot&gt;&lt;/slot&gt;
+      &lt;/div&gt;
+    `</span>;
+  }
+}
+customElements.define(<span class="ts">'styled-card'</span>, StyledCard);</code></pre>
+            <div class="note"><strong>Why it matters:</strong> No more CSS naming conventions (BEM etc.) to avoid collisions. The browser enforces isolation for you.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ -->
+      <section class="example" id="attrs">
+        <h2>3. Reactive Attributes</h2>
+        <p class="lede">
+          Declare which attributes you care about with <code>observedAttributes</code>, and the browser
+          calls <code>attributeChangedCallback</code> whenever they change. Click the buttons —
+          the badge updates because we change its <code>count</code> attribute.
+        </p>
+
+        <div class="split">
+          <div class="pane">
+            <div class="pane-label">Demo</div>
+            <div class="demo">
+              <div class="row">
+                <span>Notifications:</span>
+                <counter-badge count="0" id="badge"></counter-badge>
+              </div>
+              <div class="row">
+                <button class="action" id="badge-up">+1</button>
+                <button class="action secondary" id="badge-down">-1</button>
+                <button class="action secondary" id="badge-reset">Reset</button>
+              </div>
+            </div>
+          </div>
+          <div class="pane">
+            <div class="pane-label">Code</div>
+<pre><code><span class="tk">class</span> <span class="tf">CounterBadge</span> <span class="tk">extends</span> HTMLElement {
+  <span class="tk">static</span> observedAttributes = [<span class="ts">'count'</span>];
+
+  <span class="tf">connectedCallback</span>() {
+    <span class="tk">this</span>.attachShadow({ mode: <span class="ts">'open'</span> });
+    <span class="tk">this</span>.render();
+  }
+
+  <span class="tf">attributeChangedCallback</span>(name, oldVal, newVal) {
+    <span class="tk">if</span> (<span class="tk">this</span>.shadowRoot) <span class="tk">this</span>.render();
+  }
+
+  <span class="tf">render</span>() {
+    <span class="tk">const</span> n = Number(<span class="tk">this</span>.getAttribute(<span class="ts">'count'</span>) || 0);
+    <span class="tk">this</span>.shadowRoot.innerHTML = <span class="ts">`
+      &lt;style&gt;
+        :host { display: inline-block; padding: 2px 10px;
+                background: ${n > 0 ? <span class="ts">'#ef4444'</span> : <span class="ts">'#9ca3af'</span>};
+                color: white; border-radius: 999px;
+                font-size: 13px; font-weight: 600; }
+      &lt;/style&gt;
+      ${n}
+    `</span>;
+  }
+}
+customElements.define(<span class="ts">'counter-badge'</span>, CounterBadge);</code></pre>
+            <div class="note"><strong>Attribute vs property:</strong> Attributes are strings in HTML. Properties are JS values on the element instance. For complex data (objects/arrays), use properties; for simple strings, attributes are fine.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ -->
+      <section class="example" id="slots">
+        <h2>4. Slots & Composition</h2>
+        <p class="lede">
+          Slots let users pass content into your component. Default slot catches anything;
+          named slots route content to specific spots. The component owns layout, the user
+          owns content.
+        </p>
+
+        <div class="split">
+          <div class="pane">
+            <div class="pane-label">Demo</div>
+            <div class="demo">
+              <slotted-card>
+                <span slot="title">Quarterly Report</span>
+                <p style="margin:0;">Revenue is up 12% over Q3, driven by enterprise deals closing earlier than forecast.</p>
+                <div slot="actions">
+                  <button class="action">Open</button>
+                  <button class="action secondary">Dismiss</button>
+                </div>
+              </slotted-card>
+            </div>
+          </div>
+          <div class="pane">
+            <div class="pane-label">Code</div>
+<pre><code><span class="tk">class</span> <span class="tf">SlottedCard</span> <span class="tk">extends</span> HTMLElement {
+  <span class="tf">connectedCallback</span>() {
+    <span class="tk">this</span>.attachShadow({ mode: <span class="ts">'open'</span> }).innerHTML = <span class="ts">`
+      &lt;style&gt;
+        article { border: 1px solid #e3e6ee;
+                  border-radius: 8px; overflow: hidden; }
+        header  { background: #4f46e5; color: white;
+                  padding: 10px 14px; font-weight: 600; }
+        .body   { padding: 14px; }
+        footer  { padding: 10px 14px; background: #f9fafb;
+                  display: flex; gap: 8px; }
+      &lt;/style&gt;
+      &lt;article&gt;
+        &lt;header&gt;&lt;slot name="title"&gt;Untitled&lt;/slot&gt;&lt;/header&gt;
+        &lt;div class="body"&gt;&lt;slot&gt;&lt;/slot&gt;&lt;/div&gt;
+        &lt;footer&gt;&lt;slot name="actions"&gt;&lt;/slot&gt;&lt;/footer&gt;
+      &lt;/article&gt;
+    `</span>;
+  }
+}
+customElements.define(<span class="ts">'slotted-card'</span>, SlottedCard);</code></pre>
+<pre><code><span class="tc">&lt;!-- usage --&gt;</span>
+&lt;slotted-card&gt;
+  &lt;span slot=<span class="ts">"title"</span>&gt;Quarterly Report&lt;/span&gt;
+  &lt;p&gt;Revenue is up 12%...&lt;/p&gt;
+  &lt;div slot=<span class="ts">"actions"</span>&gt;
+    &lt;button&gt;Open&lt;/button&gt;
+  &lt;/div&gt;
+&lt;/slotted-card&gt;</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ -->
+      <section class="example" id="events">
+        <h2>5. Custom Events</h2>
+        <p class="lede">
+          Components communicate up the tree by dispatching events. Use
+          <code>CustomEvent</code> with <code>bubbles: true</code> so ancestors can listen.
+          Click the heart — a parent listener catches the event.
+        </p>
+
+        <div class="split">
+          <div class="pane">
+            <div class="pane-label">Demo</div>
+            <div class="demo" id="like-demo">
+              <like-button></like-button>
+              <div id="like-log" style="font-size:13px; color:var(--ink-soft); font-family:monospace;"></div>
+            </div>
+          </div>
+          <div class="pane">
+            <div class="pane-label">Code</div>
+<pre><code><span class="tk">class</span> <span class="tf">LikeButton</span> <span class="tk">extends</span> HTMLElement {
+  #count = 0;
+
+  <span class="tf">connectedCallback</span>() {
+    <span class="tk">this</span>.attachShadow({ mode: <span class="ts">'open'</span> }).innerHTML = <span class="ts">`
+      &lt;style&gt;
+        button { font-size: 16px; padding: 6px 12px;
+                 border: 1px solid #e3e6ee; background: white;
+                 border-radius: 6px; cursor: pointer; }
+        button:hover { background: #fef2f2; }
+      &lt;/style&gt;
+      &lt;button&gt;&#x2764;&#xFE0F; &lt;span&gt;0&lt;/span&gt;&lt;/button&gt;
+    `</span>;
+    <span class="tk">this</span>.shadowRoot.querySelector(<span class="ts">'button'</span>)
+      .addEventListener(<span class="ts">'click'</span>, () =&gt; <span class="tk">this</span>.bump());
+  }
+
+  <span class="tf">bump</span>() {
+    <span class="tk">this</span>.#count++;
+    <span class="tk">this</span>.shadowRoot.querySelector(<span class="ts">'span'</span>).textContent = <span class="tk">this</span>.#count;
+    <span class="tk">this</span>.dispatchEvent(<span class="tk">new</span> CustomEvent(<span class="ts">'like'</span>, {
+      detail: { count: <span class="tk">this</span>.#count },
+      bubbles: <span class="tk">true</span>,
+      composed: <span class="tk">true</span>  <span class="tc">// cross shadow boundary</span>
+    }));
+  }
+}
+customElements.define(<span class="ts">'like-button'</span>, LikeButton);
+
+<span class="tc">// listener on a parent</span>
+document.getElementById(<span class="ts">'like-demo'</span>).addEventListener(<span class="ts">'like'</span>, e =&gt; {
+  console.log(<span class="ts">'liked!'</span>, e.detail.count);
+});</code></pre>
+            <div class="note"><strong>Watch out:</strong> Events from inside a shadow root won't escape unless you set <code>composed: true</code>.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ -->
+      <section class="example" id="form-input">
+        <h2>6. Form-Associated Custom Element</h2>
+        <p class="lede">
+          A custom element can act like a real form control — submitted with the form,
+          reset with the form, validated with the form — by setting
+          <code>static formAssociated = true</code> and using <code>ElementInternals</code>.
+          This is one of the most powerful (and least known) web component features.
+        </p>
+
+        <div class="split">
+          <div class="pane">
+            <div class="pane-label">Demo</div>
+            <div class="demo">
+              <form id="toggle-form">
+                <label class="field">Enable notifications:</label>
+                <toggle-switch name="notifications" value="off"></toggle-switch>
+                <div class="row" style="margin-top:12px;">
+                  <button class="action" type="submit">Submit</button>
+                  <button class="action secondary" type="reset">Reset</button>
+                </div>
+                <div id="toggle-out" style="font-family:monospace; font-size:13px; color:var(--ink-soft); margin-top:8px;"></div>
+              </form>
+            </div>
+          </div>
+          <div class="pane">
+            <div class="pane-label">Code</div>
+<pre><code><span class="tk">class</span> <span class="tf">ToggleSwitch</span> <span class="tk">extends</span> HTMLElement {
+  <span class="tk">static</span> formAssociated = <span class="tk">true</span>;
+  #internals; #on = <span class="tk">false</span>;
+
+  <span class="tf">constructor</span>() {
+    <span class="tk">super</span>();
+    <span class="tk">this</span>.#internals = <span class="tk">this</span>.attachInternals();
+    <span class="tk">this</span>.attachShadow({ mode: <span class="ts">'open'</span> });
+  }
+
+  <span class="tf">connectedCallback</span>() {
+    <span class="tk">this</span>.#on = <span class="tk">this</span>.getAttribute(<span class="ts">'value'</span>) === <span class="ts">'on'</span>;
+    <span class="tk">this</span>.render();
+    <span class="tk">this</span>.shadowRoot.querySelector(<span class="ts">'button'</span>)
+      .addEventListener(<span class="ts">'click'</span>, e =&gt; {
+        e.preventDefault();
+        <span class="tk">this</span>.#on = !<span class="tk">this</span>.#on;
+        <span class="tk">this</span>.#sync();
+        <span class="tk">this</span>.render();
+      });
+    <span class="tk">this</span>.#sync();
+  }
+
+  <span class="tf">#sync</span>() {
+    <span class="tk">this</span>.#internals.setFormValue(<span class="tk">this</span>.#on ? <span class="ts">'on'</span> : <span class="ts">'off'</span>);
+  }
+
+  <span class="tf">formResetCallback</span>() {
+    <span class="tk">this</span>.#on = <span class="tk">this</span>.getAttribute(<span class="ts">'value'</span>) === <span class="ts">'on'</span>;
+    <span class="tk">this</span>.#sync();
+    <span class="tk">this</span>.render();
+  }
+
+  <span class="tf">render</span>() {
+    <span class="tk">this</span>.shadowRoot.innerHTML = <span class="ts">`
+      &lt;style&gt;
+        button { width: 44px; height: 24px; border: 0;
+                 background: ${<span class="tk">this</span>.#on ? <span class="ts">'#4f46e5'</span> : <span class="ts">'#cbd5e1'</span>};
+                 border-radius: 999px; cursor: pointer;
+                 position: relative; transition: background .15s; }
+        button::after { content: ''; position: absolute;
+                        top: 2px; left: ${<span class="tk">this</span>.#on ? <span class="ts">'22px'</span> : <span class="ts">'2px'</span>};
+                        width: 20px; height: 20px;
+                        background: white; border-radius: 50%;
+                        transition: left .15s; }
+      &lt;/style&gt;
+      &lt;button type="button" aria-pressed="${<span class="tk">this</span>.#on}"&gt;&lt;/button&gt;
+    `</span>;
+  }
+}
+customElements.define(<span class="ts">'toggle-switch'</span>, ToggleSwitch);</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ -->
+      <section class="example" id="form-demo">
+        <h2>7. Full Form Demo</h2>
+        <p class="lede">
+          Combining the toggle with a custom <code>&lt;rating-stars&gt;</code> input. Both participate
+          in the form natively — submit and you'll see the values come through
+          standard <code>FormData</code>, no custom serialization needed.
+        </p>
+
+        <div class="split">
+          <div class="pane">
+            <div class="pane-label">Demo</div>
+            <div class="demo">
+              <form id="full-form">
+                <label class="field" for="ff-name">Name</label>
+                <input class="text" id="ff-name" name="name" type="text" value="Tony">
+
+                <label class="field" style="margin-top:12px;">Subscribe to digest</label>
+                <toggle-switch name="subscribe" value="on"></toggle-switch>
+
+                <label class="field" style="margin-top:12px;">Rate your experience</label>
+                <rating-stars name="rating" value="3" max="5"></rating-stars>
+
+                <div class="row" style="margin-top:16px;">
+                  <button class="action" type="submit">Submit</button>
+                  <button class="action secondary" type="reset">Reset</button>
+                </div>
+                <pre id="ff-out" style="margin-top:12px; min-height:60px;"></pre>
+              </form>
+            </div>
+          </div>
+          <div class="pane">
+            <div class="pane-label">Code (RatingStars)</div>
+<pre><code><span class="tk">class</span> <span class="tf">RatingStars</span> <span class="tk">extends</span> HTMLElement {
+  <span class="tk">static</span> formAssociated = <span class="tk">true</span>;
+  <span class="tk">static</span> observedAttributes = [<span class="ts">'value'</span>, <span class="ts">'max'</span>];
+  #internals;
+
+  <span class="tf">constructor</span>() {
+    <span class="tk">super</span>();
+    <span class="tk">this</span>.#internals = <span class="tk">this</span>.attachInternals();
+    <span class="tk">this</span>.attachShadow({ mode: <span class="ts">'open'</span> });
+  }
+
+  <span class="tf">connectedCallback</span>() { <span class="tk">this</span>.render(); <span class="tk">this</span>.#sync(); }
+  <span class="tf">attributeChangedCallback</span>() {
+    <span class="tk">if</span> (<span class="tk">this</span>.isConnected) { <span class="tk">this</span>.render(); <span class="tk">this</span>.#sync(); }
+  }
+  <span class="tf">formResetCallback</span>() { <span class="tk">this</span>.render(); <span class="tk">this</span>.#sync(); }
+
+  <span class="tf">#sync</span>() {
+    <span class="tk">this</span>.#internals.setFormValue(<span class="tk">this</span>.getAttribute(<span class="ts">'value'</span>) || <span class="ts">'0'</span>);
+  }
+
+  <span class="tf">render</span>() {
+    <span class="tk">const</span> max = +(<span class="tk">this</span>.getAttribute(<span class="ts">'max'</span>) || 5);
+    <span class="tk">const</span> val = +(<span class="tk">this</span>.getAttribute(<span class="ts">'value'</span>) || 0);
+    <span class="tk">const</span> stars = Array.from({ length: max }, (_, i) =&gt; <span class="ts">`
+      &lt;button type="button" data-i="${i + 1}"&gt;
+        ${i &lt; val ? <span class="ts">'&#x2605;'</span> : <span class="ts">'&#x2606;'</span>}
+      &lt;/button&gt;
+    `</span>).join(<span class="ts">''</span>);
+
+    <span class="tk">this</span>.shadowRoot.innerHTML = <span class="ts">`
+      &lt;style&gt;
+        button { background: none; border: 0; cursor: pointer;
+                 font-size: 22px; color: #f59e0b; padding: 2px; }
+      &lt;/style&gt;${stars}`</span>;
+
+    <span class="tk">this</span>.shadowRoot.querySelectorAll(<span class="ts">'button'</span>).forEach(b =&gt; {
+      b.onclick = () =&gt; <span class="tk">this</span>.setAttribute(<span class="ts">'value'</span>, b.dataset.i);
+    });
+  }
+}
+customElements.define(<span class="ts">'rating-stars'</span>, RatingStars);
+
+<span class="tc">// reading the form</span>
+form.addEventListener(<span class="ts">'submit'</span>, e =&gt; {
+  e.preventDefault();
+  <span class="tk">const</span> data = Object.fromEntries(<span class="tk">new</span> FormData(form));
+  <span class="tc">// =&gt; { name: '...', subscribe: 'on', rating: '4' }</span>
+});</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ -->
+      <section class="example" id="bar-chart">
+        <h2>8. SVG Bar Chart</h2>
+        <p class="lede">
+          A reactive chart that re-renders whenever its <code>data</code> attribute changes.
+          The component owns layout, axes, and styling; the host page just hands it numbers.
+        </p>
+
+        <div class="split">
+          <div class="pane">
+            <div class="pane-label">Demo</div>
+            <div class="demo">
+              <bar-chart id="bc" data="[12, 25, 18, 30, 22, 8, 15]"></bar-chart>
+              <div class="row">
+                <button class="action" id="bc-randomize">Randomize</button>
+                <button class="action secondary" id="bc-add">Add bar</button>
+              </div>
+            </div>
+          </div>
+          <div class="pane">
+            <div class="pane-label">Code</div>
+<pre><code><span class="tk">class</span> <span class="tf">BarChart</span> <span class="tk">extends</span> HTMLElement {
+  <span class="tk">static</span> observedAttributes = [<span class="ts">'data'</span>];
+
+  <span class="tf">connectedCallback</span>() {
+    <span class="tk">this</span>.attachShadow({ mode: <span class="ts">'open'</span> });
+    <span class="tk">this</span>.render();
+  }
+
+  <span class="tf">attributeChangedCallback</span>() {
+    <span class="tk">if</span> (<span class="tk">this</span>.shadowRoot) <span class="tk">this</span>.render();
+  }
+
+  <span class="tf">render</span>() {
+    <span class="tk">let</span> data = [];
+    <span class="tk">try</span> { data = JSON.parse(<span class="tk">this</span>.getAttribute(<span class="ts">'data'</span>) || <span class="ts">'[]'</span>); }
+    <span class="tk">catch</span> { data = []; }
+
+    <span class="tk">const</span> w = 360, h = 160, pad = 8;
+    <span class="tk">const</span> max = Math.max(...data, 1);
+    <span class="tk">const</span> bw = (w - pad * 2) / data.length;
+
+    <span class="tk">const</span> bars = data.map((v, i) =&gt; {
+      <span class="tk">const</span> bh = (v / max) * (h - pad * 2);
+      <span class="tk">return</span> <span class="ts">`&lt;rect x="${pad + i * bw + 2}"
+        y="${h - pad - bh}" width="${bw - 4}" height="${bh}"
+        fill="#4f46e5" rx="3"&gt;&lt;/rect&gt;
+        &lt;text x="${pad + i * bw + bw / 2}" y="${h - pad + 4}"
+          text-anchor="middle" font-size="10" fill="#5b6478"
+          dy="10"&gt;${v}&lt;/text&gt;`</span>;
+    }).join(<span class="ts">''</span>);
+
+    <span class="tk">this</span>.shadowRoot.innerHTML = <span class="ts">`
+      &lt;svg viewBox="0 0 ${w} ${h + 14}" width="100%"&gt;
+        ${bars}
+      &lt;/svg&gt;
+    `</span>;
+  }
+}
+customElements.define(<span class="ts">'bar-chart'</span>, BarChart);
+
+<span class="tc">// update from outside — just set the attribute</span>
+chart.setAttribute(<span class="ts">'data'</span>, JSON.stringify([5, 10, 15]));</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ -->
+      <section class="example" id="sparkline">
+        <h2>9. Live Sparkline</h2>
+        <p class="lede">
+          Internal state + <code>setInterval</code> driven from <code>connectedCallback</code>,
+          cleaned up in <code>disconnectedCallback</code>. Hit "Toggle" to remove the element
+          from the DOM and watch the cleanup fire (open the console).
+        </p>
+
+        <div class="split">
+          <div class="pane">
+            <div class="pane-label">Demo</div>
+            <div class="demo">
+              <div id="sl-host">
+                <live-sparkline></live-sparkline>
+              </div>
+              <div class="row">
+                <button class="action" id="sl-toggle">Toggle (mount/unmount)</button>
+              </div>
+              <div style="font-size:12px; color:var(--ink-soft);">
+                Open the console to see lifecycle logs.
+              </div>
+            </div>
+          </div>
+          <div class="pane">
+            <div class="pane-label">Code</div>
+<pre><code><span class="tk">class</span> <span class="tf">LiveSparkline</span> <span class="tk">extends</span> HTMLElement {
+  #data = Array.from({ length: 30 }, () =&gt; 50);
+  #timer;
+
+  <span class="tf">connectedCallback</span>() {
+    console.log(<span class="ts">'sparkline mounted'</span>);
+    <span class="tk">this</span>.attachShadow({ mode: <span class="ts">'open'</span> });
+    <span class="tk">this</span>.render();
+    <span class="tk">this</span>.#timer = setInterval(() =&gt; {
+      <span class="tk">this</span>.#data.shift();
+      <span class="tk">this</span>.#data.push(20 + Math.random() * 80);
+      <span class="tk">this</span>.render();
+    }, 500);
+  }
+
+  <span class="tf">disconnectedCallback</span>() {
+    console.log(<span class="ts">'sparkline unmounted — clearing timer'</span>);
+    clearInterval(<span class="tk">this</span>.#timer);
+  }
+
+  <span class="tf">render</span>() {
+    <span class="tk">const</span> w = 360, h = 80;
+    <span class="tk">const</span> step = w / (<span class="tk">this</span>.#data.length - 1);
+    <span class="tk">const</span> pts = <span class="tk">this</span>.#data
+      .map((v, i) =&gt; <span class="ts">`${i * step},${h - (v / 100) * h}`</span>)
+      .join(<span class="ts">' '</span>);
+    <span class="tk">const</span> last = <span class="tk">this</span>.#data[<span class="tk">this</span>.#data.length - 1].toFixed(0);
+
+    <span class="tk">this</span>.shadowRoot.innerHTML = <span class="ts">`
+      &lt;style&gt;
+        :host { display: block; }
+        .wrap { display: flex; align-items: center; gap: 12px; }
+        .val  { font-family: monospace; font-size: 24px;
+                color: #4f46e5; min-width: 36px; }
+      &lt;/style&gt;
+      &lt;div class="wrap"&gt;
+        &lt;div class="val"&gt;${last}&lt;/div&gt;
+        &lt;svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}"&gt;
+          &lt;polyline points="${pts}" fill="none"
+            stroke="#4f46e5" stroke-width="2" /&gt;
+        &lt;/svg&gt;
+      &lt;/div&gt;
+    `</span>;
+  }
+}
+customElements.define(<span class="ts">'live-sparkline'</span>, LiveSparkline);</code></pre>
+            <div class="note"><strong>Lifecycle cheat sheet:</strong> <code>connectedCallback</code> = inserted, <code>disconnectedCallback</code> = removed, <code>attributeChangedCallback</code> = observed attribute changed, <code>adoptedCallback</code> = moved to a new document.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ -->
+      <section class="example" id="mini-app">
+        <h2>10. Putting It Together</h2>
+        <p class="lede">
+          A complete page — what you'd actually ship. A form with a real <code>&lt;input&gt;</code>
+          plus two custom inputs, a custom card rendered per submission, and a live chart.
+          One file. No build. The iframe below loads <code>mini-app.html</code> directly from disk.
+        </p>
+
+        <div style="margin-bottom:24px;">
+          <iframe src="mini-app.html"
+                  style="width:100%; height:640px; border:1px solid var(--line); border-radius:8px; background:white;"></iframe>
+          <div style="font-size:12px; color:var(--ink-soft); margin-top:6px;">
+            <a href="mini-app.html" target="_blank" style="color:var(--accent);">Open standalone &rarr;</a>
+          </div>
+        </div>
+
+        <h3 style="margin:24px 0 8px; font-size:16px;">Anatomy of the page</h3>
+        <p style="color:var(--ink-soft); margin:0 0 12px;">
+          Top-to-bottom, here's what every web components page looks like.
+        </p>
+
+<pre><code><span class="tk">&lt;!DOCTYPE html&gt;</span>
+&lt;html&gt;
+&lt;head&gt;
+  &lt;meta charset=<span class="ts">"UTF-8"</span>&gt;
+  &lt;title&gt;My App&lt;/title&gt;
+  &lt;style&gt;
+    <span class="tc">/* Hide custom elements until they're registered. */</span>
+    :not(:defined) { visibility: hidden; }
+  &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  <span class="tc">&lt;!-- 1. Use your custom tags like any HTML element. --&gt;</span>
+  &lt;form id=<span class="ts">"form"</span>&gt;
+    &lt;input name=<span class="ts">"name"</span> type=<span class="ts">"text"</span>&gt;
+    &lt;toggle-switch name=<span class="ts">"subscribe"</span>&gt;&lt;/toggle-switch&gt;
+    &lt;rating-stars name=<span class="ts">"rating"</span> value=<span class="ts">"3"</span>&gt;&lt;/rating-stars&gt;
+    &lt;button type=<span class="ts">"submit"</span>&gt;Submit&lt;/button&gt;
+  &lt;/form&gt;
+
+  <span class="tc">&lt;!-- 2. Define them. Order doesn't matter — see below. --&gt;</span>
+  &lt;script&gt;
+    <span class="tk">class</span> <span class="tf">ToggleSwitch</span> <span class="tk">extends</span> HTMLElement { <span class="tc">/* ... */</span> }
+    customElements.define(<span class="ts">'toggle-switch'</span>, ToggleSwitch);
+
+    <span class="tk">class</span> <span class="tf">RatingStars</span> <span class="tk">extends</span> HTMLElement { <span class="tc">/* ... */</span> }
+    customElements.define(<span class="ts">'rating-stars'</span>, RatingStars);
+
+    <span class="tc">// 3. Page-level wiring like normal JS.</span>
+    document.getElementById(<span class="ts">'form'</span>).addEventListener(<span class="ts">'submit'</span>, e =&gt; {
+      e.preventDefault();
+      <span class="tk">const</span> data = Object.fromEntries(<span class="tk">new</span> FormData(e.target));
+      <span class="tc">// =&gt; { name: '...', subscribe: 'on', rating: '4' }</span>
+    });
+  &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+
+        <h3 style="margin:32px 0 8px; font-size:16px;">How the browser renders this</h3>
+        <ol style="color:var(--ink); padding-left:20px; margin:0 0 16px;">
+          <li>Browser parses HTML top-to-bottom.</li>
+          <li>Hits <code>&lt;toggle-switch&gt;</code>. The tag isn't registered yet — that's fine. It creates a generic <code>HTMLElement</code> with that tag name and keeps going. CSS sees it as <code>:not(:defined)</code> and hides it.</li>
+          <li>Reaches the <code>&lt;script&gt;</code>. Runs <code>customElements.define('toggle-switch', ToggleSwitch)</code>.</li>
+          <li>Browser walks the document, finds every existing <code>&lt;toggle-switch&gt;</code> instance, and <em>upgrades</em> it: swaps its prototype to <code>ToggleSwitch</code>, then fires <code>connectedCallback</code>. <code>:defined</code> now matches and the element appears.</li>
+          <li>Any <code>&lt;toggle-switch&gt;</code> created later (e.g. from <code>document.createElement</code>) is upgraded immediately on insertion.</li>
+        </ol>
+
+        <h3 style="margin:32px 0 8px; font-size:16px;">No build step required</h3>
+        <p style="margin:0 0 12px;">
+          Web components are a native browser API. <code>customElements</code>, shadow DOM,
+          <code>&lt;template&gt;</code>, ES classes, private fields, <code>ElementInternals</code> — all of it ships in
+          modern browsers. You write a <code>.html</code> file, you double-click it, it works.
+        </p>
+
+        <h3 style="margin:24px 0 8px; font-size:16px;">When you'd want imports / multiple files</h3>
+        <p style="margin:0 0 12px;">
+          Once you have more than a handful of components, inline scripts get unwieldy. Switch to ES modules:
+        </p>
+<pre><code><span class="tc">// toggle-switch.js</span>
+<span class="tk">export class</span> <span class="tf">ToggleSwitch</span> <span class="tk">extends</span> HTMLElement { <span class="tc">/* ... */</span> }
+customElements.define(<span class="ts">'toggle-switch'</span>, ToggleSwitch);
+
+<span class="tc">// rating-stars.js</span>
+<span class="tk">export class</span> <span class="tf">RatingStars</span> <span class="tk">extends</span> HTMLElement { <span class="tc">/* ... */</span> }
+customElements.define(<span class="ts">'rating-stars'</span>, RatingStars);
+
+<span class="tc">// app.js</span>
+<span class="tk">import</span> <span class="ts">'./toggle-switch.js'</span>;  <span class="tc">// side-effect import: registers the tag</span>
+<span class="tk">import</span> <span class="ts">'./rating-stars.js'</span>;
+<span class="tc">// ...page wiring here</span></code></pre>
+<pre><code><span class="tc">&lt;!-- index.html --&gt;</span>
+&lt;script type=<span class="ts">"module"</span> src=<span class="ts">"./app.js"</span>&gt;&lt;/script&gt;</code></pre>
+        <div class="note">
+          <strong>Catch:</strong> ES module imports require an HTTP server (any will do — <code>python3 -m http.server</code>, <code>npx serve</code>, GitHub Pages). They won't work over <code>file://</code> because of CORS. Inline <code>&lt;script&gt;</code> still works fine from a local file.
+        </div>
+
+        <h3 style="margin:32px 0 8px; font-size:16px;">When a build step starts to earn its keep</h3>
+        <ul style="color:var(--ink); padding-left:20px; margin:0;">
+          <li>You want to use TypeScript.</li>
+          <li>You want to write template syntax (Lit's <code>html`...`</code>) without losing editor support.</li>
+          <li>You want to bundle dozens of modules into one file for production HTTP/1 latency. (HTTP/2 makes this less important.)</li>
+          <li>You want CSS preprocessing or hashed asset names for cache busting.</li>
+        </ul>
+        <p style="margin:12px 0 0; color:var(--ink-soft);">
+          For everything else — and certainly for learning — skip it.
+        </p>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- Component definitions                                          -->
+  <!-- ============================================================ -->
+  <script>
+    // 1. Hello Element
+    class HelloElement extends HTMLElement {
+      connectedCallback() {
+        const name = this.getAttribute('name') || 'world';
+        this.textContent = `Hello, ${name}!`;
+      }
+    }
+    customElements.define('hello-element', HelloElement);
+
+    // 2. Styled Card (shadow DOM)
+    class StyledCard extends HTMLElement {
+      connectedCallback() {
+        const shadow = this.attachShadow({ mode: 'open' });
+        shadow.innerHTML = `
+          <style>
+            .card { padding: 16px; background: #eef2ff; border-radius: 8px; }
+            h3 { color: tomato; margin: 0 0 8px; font-size: 16px; }
+          </style>
+          <div class="card">
+            <h3>${this.getAttribute('title') || ''}</h3>
+            <slot></slot>
+          </div>
+        `;
+      }
+    }
+    customElements.define('styled-card', StyledCard);
+
+    // 3. Counter Badge (reactive attribute)
+    class CounterBadge extends HTMLElement {
+      static observedAttributes = ['count'];
+      connectedCallback() {
+        this.attachShadow({ mode: 'open' });
+        this.render();
+      }
+      attributeChangedCallback() {
+        if (this.shadowRoot) this.render();
+      }
+      render() {
+        const n = Number(this.getAttribute('count') || 0);
+        this.shadowRoot.innerHTML = `
+          <style>
+            :host {
+              display: inline-block;
+              padding: 2px 10px;
+              background: ${n > 0 ? '#ef4444' : '#9ca3af'};
+              color: white;
+              border-radius: 999px;
+              font-size: 13px;
+              font-weight: 600;
+            }
+          </style>
+          ${n}
+        `;
+      }
+    }
+    customElements.define('counter-badge', CounterBadge);
+
+    {
+      const badge = document.getElementById('badge');
+      const get = () => Number(badge.getAttribute('count') || 0);
+      document.getElementById('badge-up').onclick = () =>
+        badge.setAttribute('count', get() + 1);
+      document.getElementById('badge-down').onclick = () =>
+        badge.setAttribute('count', Math.max(0, get() - 1));
+      document.getElementById('badge-reset').onclick = () =>
+        badge.setAttribute('count', 0);
+    }
+
+    // 4. Slotted Card
+    class SlottedCard extends HTMLElement {
+      connectedCallback() {
+        this.attachShadow({ mode: 'open' }).innerHTML = `
+          <style>
+            article { border: 1px solid #e3e6ee; border-radius: 8px; overflow: hidden; }
+            header { background: #4f46e5; color: white; padding: 10px 14px; font-weight: 600; }
+            .body { padding: 14px; }
+            footer { padding: 10px 14px; background: #f9fafb; display: flex; gap: 8px; }
+            ::slotted(*) { color: inherit; }
+          </style>
+          <article>
+            <header><slot name="title">Untitled</slot></header>
+            <div class="body"><slot></slot></div>
+            <footer><slot name="actions"></slot></footer>
+          </article>
+        `;
+      }
+    }
+    customElements.define('slotted-card', SlottedCard);
+
+    // 5. Like Button (custom event)
+    class LikeButton extends HTMLElement {
+      #count = 0;
+      connectedCallback() {
+        this.attachShadow({ mode: 'open' }).innerHTML = `
+          <style>
+            button {
+              font-size: 16px; padding: 6px 12px;
+              border: 1px solid #e3e6ee; background: white;
+              border-radius: 6px; cursor: pointer;
+            }
+            button:hover { background: #fef2f2; }
+          </style>
+          <button>&#x2764;&#xFE0F; <span>0</span></button>
+        `;
+        this.shadowRoot.querySelector('button')
+          .addEventListener('click', () => this.bump());
+      }
+      bump() {
+        this.#count++;
+        this.shadowRoot.querySelector('span').textContent = this.#count;
+        this.dispatchEvent(new CustomEvent('like', {
+          detail: { count: this.#count },
+          bubbles: true,
+          composed: true
+        }));
+      }
+    }
+    customElements.define('like-button', LikeButton);
+
+    {
+      const log = document.getElementById('like-log');
+      document.getElementById('like-demo').addEventListener('like', e => {
+        log.textContent = `event 'like' caught — count: ${e.detail.count}`;
+      });
+    }
+
+    // 6. Toggle Switch (form-associated)
+    class ToggleSwitch extends HTMLElement {
+      static formAssociated = true;
+      #internals;
+      #on = false;
+
+      constructor() {
+        super();
+        this.#internals = this.attachInternals();
+        this.attachShadow({ mode: 'open' });
+      }
+
+      connectedCallback() {
+        this.#on = this.getAttribute('value') === 'on';
+        this.render();
+        this.shadowRoot.querySelector('button').addEventListener('click', e => {
+          e.preventDefault();
+          this.#on = !this.#on;
+          this.#sync();
+          this.render();
+        });
+        this.#sync();
+      }
+
+      #sync() {
+        this.#internals.setFormValue(this.#on ? 'on' : 'off');
+      }
+
+      formResetCallback() {
+        this.#on = this.getAttribute('value') === 'on';
+        this.#sync();
+        this.render();
+      }
+
+      render() {
+        this.shadowRoot.innerHTML = `
+          <style>
+            button {
+              width: 44px; height: 24px; border: 0;
+              background: ${this.#on ? '#4f46e5' : '#cbd5e1'};
+              border-radius: 999px; cursor: pointer;
+              position: relative; transition: background .15s;
+            }
+            button::after {
+              content: ''; position: absolute;
+              top: 2px; left: ${this.#on ? '22px' : '2px'};
+              width: 20px; height: 20px;
+              background: white; border-radius: 50%;
+              transition: left .15s;
+            }
+          </style>
+          <button type="button" aria-pressed="${this.#on}"></button>
+        `;
+      }
+    }
+    customElements.define('toggle-switch', ToggleSwitch);
+
+    {
+      const form = document.getElementById('toggle-form');
+      const out = document.getElementById('toggle-out');
+      form.addEventListener('submit', e => {
+        e.preventDefault();
+        const data = Object.fromEntries(new FormData(form));
+        out.textContent = JSON.stringify(data, null, 2);
+      });
+      form.addEventListener('reset', () => { out.textContent = ''; });
+    }
+
+    // 7. Rating Stars + full form
+    class RatingStars extends HTMLElement {
+      static formAssociated = true;
+      static observedAttributes = ['value', 'max'];
+      #internals;
+
+      constructor() {
+        super();
+        this.#internals = this.attachInternals();
+        this.attachShadow({ mode: 'open' });
+      }
+
+      connectedCallback() { this.render(); this.#sync(); }
+      attributeChangedCallback() {
+        if (this.isConnected) { this.render(); this.#sync(); }
+      }
+      formResetCallback() { this.render(); this.#sync(); }
+
+      #sync() {
+        this.#internals.setFormValue(this.getAttribute('value') || '0');
+      }
+
+      render() {
+        const max = +(this.getAttribute('max') || 5);
+        const val = +(this.getAttribute('value') || 0);
+        const stars = Array.from({ length: max }, (_, i) => `
+          <button type="button" data-i="${i + 1}">
+            ${i < val ? '&#x2605;' : '&#x2606;'}
+          </button>
+        `).join('');
+        this.shadowRoot.innerHTML = `
+          <style>
+            button {
+              background: none; border: 0; cursor: pointer;
+              font-size: 22px; color: #f59e0b; padding: 2px;
+            }
+          </style>${stars}
+        `;
+        this.shadowRoot.querySelectorAll('button').forEach(b => {
+          b.onclick = () => this.setAttribute('value', b.dataset.i);
+        });
+      }
+    }
+    customElements.define('rating-stars', RatingStars);
+
+    {
+      const form = document.getElementById('full-form');
+      const out = document.getElementById('ff-out');
+      form.addEventListener('submit', e => {
+        e.preventDefault();
+        const data = Object.fromEntries(new FormData(form));
+        out.textContent = JSON.stringify(data, null, 2);
+      });
+      form.addEventListener('reset', () => { out.textContent = ''; });
+    }
+
+    // 8. Bar Chart
+    class BarChart extends HTMLElement {
+      static observedAttributes = ['data'];
+      connectedCallback() {
+        this.attachShadow({ mode: 'open' });
+        this.render();
+      }
+      attributeChangedCallback() {
+        if (this.shadowRoot) this.render();
+      }
+      render() {
+        let data = [];
+        try { data = JSON.parse(this.getAttribute('data') || '[]'); }
+        catch { data = []; }
+
+        const w = 360, h = 160, pad = 8;
+        const max = Math.max(...data, 1);
+        const bw = data.length ? (w - pad * 2) / data.length : 0;
+
+        const bars = data.map((v, i) => {
+          const bh = (v / max) * (h - pad * 2);
+          return `
+            <rect x="${pad + i * bw + 2}" y="${h - pad - bh}"
+              width="${Math.max(bw - 4, 1)}" height="${bh}"
+              fill="#4f46e5" rx="3"></rect>
+            <text x="${pad + i * bw + bw / 2}" y="${h - pad + 4}"
+              text-anchor="middle" font-size="10" fill="#5b6478" dy="10">${v}</text>
+          `;
+        }).join('');
+
+        this.shadowRoot.innerHTML = `
+          <style>:host { display: block; }</style>
+          <svg viewBox="0 0 ${w} ${h + 14}" width="100%">${bars}</svg>
+        `;
+      }
+    }
+    customElements.define('bar-chart', BarChart);
+
+    {
+      const bc = document.getElementById('bc');
+      document.getElementById('bc-randomize').onclick = () => {
+        const len = JSON.parse(bc.getAttribute('data')).length;
+        const next = Array.from({ length: len }, () => Math.floor(Math.random() * 40) + 2);
+        bc.setAttribute('data', JSON.stringify(next));
+      };
+      document.getElementById('bc-add').onclick = () => {
+        const arr = JSON.parse(bc.getAttribute('data'));
+        arr.push(Math.floor(Math.random() * 40) + 2);
+        bc.setAttribute('data', JSON.stringify(arr));
+      };
+    }
+
+    // 9. Live Sparkline
+    class LiveSparkline extends HTMLElement {
+      #data = Array.from({ length: 30 }, () => 50);
+      #timer;
+
+      connectedCallback() {
+        console.log('sparkline mounted');
+        this.attachShadow({ mode: 'open' });
+        this.render();
+        this.#timer = setInterval(() => {
+          this.#data.shift();
+          this.#data.push(20 + Math.random() * 80);
+          this.render();
+        }, 500);
+      }
+
+      disconnectedCallback() {
+        console.log('sparkline unmounted — clearing timer');
+        clearInterval(this.#timer);
+      }
+
+      render() {
+        const w = 360, h = 80;
+        const step = w / (this.#data.length - 1);
+        const pts = this.#data
+          .map((v, i) => `${i * step},${h - (v / 100) * h}`)
+          .join(' ');
+        const last = this.#data[this.#data.length - 1].toFixed(0);
+
+        this.shadowRoot.innerHTML = `
+          <style>
+            :host { display: block; }
+            .wrap { display: flex; align-items: center; gap: 12px; }
+            .val { font-family: monospace; font-size: 24px; color: #4f46e5; min-width: 36px; }
+          </style>
+          <div class="wrap">
+            <div class="val">${last}</div>
+            <svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="none">
+              <polyline points="${pts}" fill="none" stroke="#4f46e5" stroke-width="2" />
+            </svg>
+          </div>
+        `;
+      }
+    }
+    customElements.define('live-sparkline', LiveSparkline);
+
+    {
+      const host = document.getElementById('sl-host');
+      let mounted = true;
+      document.getElementById('sl-toggle').onclick = () => {
+        if (mounted) {
+          host.innerHTML = '<span style="color:var(--ink-soft); font-size:13px;">(unmounted — check console)</span>';
+        } else {
+          host.innerHTML = '<live-sparkline></live-sparkline>';
+        }
+        mounted = !mounted;
+      };
+    }
+  </script>
+</body>
+</html>
