@@ -3,55 +3,56 @@
 		"name": "Codex 3D Spine",
 		"path": "codex-spine",
 		"desc": "Interactive 3D spine viewer built with Codex",
-		"tag": "llm",
+		"tag": ["llm", "gpt 5.4"],
 		"category": "HTML/JS"
 	},
 	{
 		"name": "Claude 3D Spine",
 		"path": "claude-spine",
 		"desc": "Interactive 3D spine viewer built with Claude",
-		"tag": "llm",
+		"tag": ["llm", "opus 4.6"],
 		"category": "HTML/JS"
 	},
 	{
 		"name": "Baby Food Tracker",
 		"path": "baby-food-tracker",
 		"desc": "Track foods introduced to your baby with dates and reactions. Stores locally in the browser.",
-		"tag": "llm",
+		"tag": ["llm", "sonnet 4.6"],
 		"category": "HTML/JS"
 	},
 	{
 		"name": "Nara Data Explorer",
 		"path": "nara-data-explorer",
 		"desc": "Drop a Narababy CSV export to visualize growth, sleep, feeds, and diapers. All processing is local.",
-		"tag": "llm",
+		"tag": ["llm", "opus 4.6"],
 		"category": "HTML/JS"
 	},
 	{
 		"name": "Web Components Lab",
 		"path": "web-components-lab",
 		"desc": "Hands-on tour of vanilla web components: shadow DOM, slots, events, form-associated elements, and SVG charts. No build step.",
-		"tag": ["learning", "llm"],
+		"tag": ["llm", "opus 4.6"],
 		"category": "HTML/JS"
 	},
 	{
 		"name": "milo",
 		"url": "https://github.com/anthonymatsas/milo",
 		"desc": "cli tool exposing apples on device foundation models",
-		"tag": "llm",
+		"tag": ["llm", "opus 4.6"],
 		"category": "CLI"
 	},
 	{
 		"name": "posty",
 		"url": "https://github.com/anthonymatsas/posty/releases/download/v0.0.7/posty_0.0.7_Darwin_arm64.tar.gz",
-		"desc": "posty is a fast, simple HTTP client for the command line.<br/>Built in Go as a lightweight alternative to Postman.<br/>basicaly a 'fancy' curl",
-		"tag": ["private repo", "direct download"],
+		"desc": "posty is a fast, simple HTTP client for the command line.<br/>Built in Go as a lightweight alternative to Postman.<br/>fancy 'cURL' that supports Postman collections",
+		"tag": ["private repo", "direct download", "human"],
 		"category": "CLI"
 	},
 	{
 		"name": "mdv",
+		"url": "https://github.com/anthonymatsas/mdv",
 		"desc": "mdv is a local markdown editor + live preview app shipped as a single Go binary. allows for local <b>live</b> collaboration with your agent(s) through markdown files",
 		"category": "CLI",
-		"tag": "private repo"
+		"tag": ["private repo", "slop", "opus 4.7"]
 	}
 ]
