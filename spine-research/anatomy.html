@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lumbar Spine — Anatomy & Loading</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600;9..144,800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1814;
+    --paper: #f4ede0;
+    --paper-warm: #ebe1cf;
+    --rust: #b8451f;
+    --rust-deep: #8a3216;
+    --moss: #5a6b3d;
+    --bone: #d9cfb8;
+    --shadow: rgba(26, 24, 20, 0.08);
+
+    /* anatomical colors */
+    --vertebra: #e8dec4;
+    --vertebra-stroke: #4a3f2e;
+    --disc: #c9a87c;
+    --disc-bad: #b8451f;
+    --nerve: #d4b896;
+    --nerve-irritated: #b8451f;
+    --canal: #2a2620;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Fraunces', Georgia, serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.55;
+    font-size: 16px;
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(184, 69, 31, 0.04) 0%, transparent 40%),
+      radial-gradient(circle at 80% 90%, rgba(90, 107, 61, 0.05) 0%, transparent 40%);
+    min-height: 100vh;
+  }
+
+  .container {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 48px 32px 100px;
+  }
+
+  header {
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 28px;
+    margin-bottom: 40px;
+  }
+
+  .meta-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--rust);
+    margin-bottom: 14px;
+  }
+
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 300;
+    font-size: clamp(36px, 5.5vw, 60px);
+    line-height: 0.98;
+    letter-spacing: -0.02em;
+    font-variation-settings: "opsz" 144;
+  }
+
+  h1 em {
+    font-style: italic;
+    font-weight: 600;
+    color: var(--rust);
+  }
+
+  .subtitle {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--ink);
+    opacity: 0.7;
+    margin-top: 18px;
+    max-width: 640px;
+    line-height: 1.6;
+  }
+
+  /* DIAGRAM SECTION */
+  .diagram-section {
+    margin: 56px 0;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 18px;
+    margin-bottom: 8px;
+    border-bottom: 1px dashed var(--ink);
+    padding-bottom: 10px;
+  }
+
+  .section-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--rust);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+  }
+
+  h2 {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: clamp(24px, 3.5vw, 32px);
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    flex: 1;
+    font-variation-settings: "opsz" 144;
+  }
+
+  .section-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink);
+    opacity: 0.55;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .section-intro {
+    font-size: 15px;
+    margin: 14px 0 28px;
+    max-width: 720px;
+    color: rgba(26, 24, 20, 0.78);
+    font-style: italic;
+  }
+
+  /* SPINE LAYOUT */
+  .spine-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    background: var(--paper-warm);
+    border: 1px solid var(--bone);
+    border-radius: 4px;
+    padding: 32px;
+  }
+
+  @media (max-width: 880px) {
+    .spine-layout { grid-template-columns: 1fr; }
+  }
+
+  .spine-views {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .view-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .view-tab {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--ink);
+    padding: 8px 14px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.15s ease;
+  }
+
+  .view-tab.active {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .spine-svg-wrap {
+    background: var(--paper);
+    border: 1px solid var(--bone);
+    border-radius: 3px;
+    padding: 16px;
+    position: relative;
+  }
+
+  .spine-svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .info-panel {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding-left: 8px;
+  }
+
+  .info-panel h3 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--moss);
+    margin-bottom: 14px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--bone);
+  }
+
+  .info-content {
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  .info-content p {
+    margin-bottom: 12px;
+  }
+
+  .info-content strong {
+    color: var(--rust-deep);
+    font-weight: 600;
+  }
+
+  .info-content em {
+    font-style: italic;
+    background: rgba(184, 69, 31, 0.08);
+    padding: 1px 4px;
+    border-radius: 2px;
+  }
+
+  .legend {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--bone);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+  }
+
+  .legend-swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    border: 1px solid var(--vertebra-stroke);
+  }
+
+  /* HOTSPOT */
+  .hotspot {
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .hotspot:hover {
+    filter: brightness(0.85);
+  }
+
+  .hotspot.active {
+    filter: drop-shadow(0 0 6px var(--rust));
+  }
+
+  /* LOAD VIZ */
+  .load-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    background: var(--paper-warm);
+    border: 1px solid var(--bone);
+    border-radius: 4px;
+    padding: 32px;
+  }
+
+  @media (max-width: 880px) {
+    .load-layout { grid-template-columns: 1fr; }
+  }
+
+  .position-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .position-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    background: var(--paper);
+    color: var(--ink);
+    border: 1px solid var(--bone);
+    padding: 12px 14px;
+    cursor: pointer;
+    border-radius: 2px;
+    text-align: left;
+    transition: all 0.15s ease;
+    line-height: 1.3;
+  }
+
+  .position-btn:hover {
+    border-color: var(--ink);
+    transform: translateX(2px);
+  }
+
+  .position-btn.active {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+  }
+
+  .position-btn .label {
+    display: block;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+
+  .position-btn .source {
+    display: block;
+    font-size: 9px;
+    opacity: 0.6;
+    letter-spacing: 0.1em;
+  }
+
+  .load-visual {
+    background: var(--paper);
+    border: 1px solid var(--bone);
+    border-radius: 3px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 360px;
+    position: relative;
+  }
+
+  .figure-svg {
+    width: 100%;
+    max-width: 280px;
+    height: auto;
+  }
+
+  .load-readout {
+    margin-top: 16px;
+    text-align: center;
+    width: 100%;
+  }
+
+  .load-number {
+    font-family: 'Fraunces', serif;
+    font-size: 64px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--ink);
+    font-variation-settings: "opsz" 144;
+    transition: color 0.3s ease;
+  }
+
+  .load-number .unit {
+    font-size: 18px;
+    font-weight: 400;
+    opacity: 0.6;
+    margin-left: 4px;
+  }
+
+  .load-bar {
+    width: 100%;
+    height: 6px;
+    background: var(--bone);
+    border-radius: 3px;
+    margin: 14px 0;
+    overflow: hidden;
+  }
+
+  .load-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--moss) 0%, var(--rust) 100%);
+    width: 0%;
+    transition: width 0.5s ease;
+  }
+
+  .load-relative {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--ink);
+    opacity: 0.7;
+    text-transform: uppercase;
+  }
+
+  .load-relative strong {
+    color: var(--rust);
+    opacity: 1;
+  }
+
+  .position-info {
+    margin-top: 24px;
+    padding: 18px;
+    background: var(--paper);
+    border: 1px solid var(--bone);
+    border-radius: 3px;
+    border-left: 3px solid var(--rust);
+  }
+
+  .position-info h4 {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 600;
+    font-size: 17px;
+    margin-bottom: 6px;
+    color: var(--rust-deep);
+  }
+
+  .position-info p {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .citation {
+    margin-top: 32px;
+    padding: 20px;
+    background: var(--ink);
+    color: var(--bone);
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    line-height: 1.7;
+    letter-spacing: 0.03em;
+  }
+
+  .citation strong {
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    font-size: 10px;
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  .nav-back {
+    display: inline-block;
+    margin-top: 40px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink);
+    text-decoration: none;
+    border-bottom: 1px dashed var(--ink);
+    padding-bottom: 2px;
+  }
+
+  ::selection {
+    background: var(--rust);
+    color: var(--paper);
+  }
+
+  /* anatomical label styles */
+  .anat-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    fill: var(--ink);
+    text-transform: uppercase;
+  }
+
+  .anat-label-rust {
+    fill: var(--rust);
+    font-weight: 700;
+  }
+
+  .anat-leader {
+    stroke: var(--ink);
+    stroke-width: 0.5;
+    fill: none;
+    opacity: 0.5;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <header>
+    <div class="meta-tag">▸ Lumbar Anatomy & Disc Loading</div>
+    <h1>The <em>spine</em>, mapped.</h1>
+    <p class="subtitle">A visual look at lumbar anatomy and why lifting technique matters as much as exercise. Numbers below are based on established biomechanics research — representative of the physics every spine obeys, not predictions for any specific person.</p>
+  </header>
+
+  <!-- ANATOMY SECTION -->
+  <section class="diagram-section">
+    <div class="section-header">
+      <span class="section-num">01</span>
+      <h2>Lumbar anatomy</h2>
+      <span class="section-meta">Click levels to inspect</span>
+    </div>
+    <p class="section-intro">Schematic representation of common L4-L5 / L5-S1 disc-related findings. Tap or click on a level to see what's typically described in MRI reports for that area.</p>
+
+    <div class="spine-layout">
+      <div class="spine-views">
+        <div class="view-tabs">
+          <button class="view-tab active" data-view="side">Side view</button>
+          <button class="view-tab" data-view="back">Back view</button>
+        </div>
+
+        <div class="spine-svg-wrap">
+          <!-- SIDE VIEW SVG -->
+          <svg class="spine-svg" id="svg-side" viewBox="0 0 280 460" xmlns="http://www.w3.org/2000/svg">
+            <!-- background grid -->
+            <defs>
+              <pattern id="grid-side" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(26,24,20,0.04)" stroke-width="0.5"/>
+              </pattern>
+            </defs>
+            <rect width="280" height="460" fill="url(#grid-side)"/>
+
+            <!-- spinal cord / canal -->
+            <path d="M 145 30 Q 142 60, 140 100 Q 138 160, 138 220 Q 138 280, 142 340 Q 146 380, 150 420"
+                  fill="none" stroke="var(--canal)" stroke-width="3" opacity="0.25"/>
+
+            <!-- T12 vertebra (top) -->
+            <g>
+              <rect x="100" y="40" width="80" height="32" rx="4" fill="var(--vertebra)" stroke="var(--vertebra-stroke)" stroke-width="1.2"/>
+              <path d="M 180 50 Q 200 56, 200 65 L 200 70 Q 200 75, 195 78 L 185 80" fill="var(--vertebra)" stroke="var(--vertebra-stroke)" stroke-width="1.2"/>
+              <text x="86" y="60" class="anat-label" text-anchor="end">T12</text>
+            </g>
+
+            <!-- Disc T12-L1 -->
+            <ellipse cx="140" cy="80" rx="40" ry="5" fill="var(--disc)" stroke="var(--vertebra-stroke)" stroke-width="0.8"/>
+
+            <!-- L1 -->
+            <g>
+              <rect x="98" y="86" width="84" height="34" rx="4" fill="var(--vertebra)" stroke="var(--vertebra-stroke)" stroke-width="1.2"/>
+              <path d="M 182 98 Q 202 104, 202 113 L 202 118 Q 202 123, 197 126 L 187 128" fill="var(--vertebra)" stroke="var(--vertebra-stroke)" stroke-width="1.2"/>
+              <text x="84" y="107" class="anat-label" text-anchor="end">L1</text>
+            </g>
+            <ellipse cx="140" cy="128" rx="42" ry="5" fill="var(--disc)" stroke="var(--vertebra-stroke)" stroke-width="0.8"/>
+
+            <!-- L2 -->
+            <g>
+              <rect x="96" y="134" width="88" height="36" rx="4" fill="var(--vertebra)" stroke="var(--vertebra-stroke)" stroke-width="1.2"/>
+              <path d="M 184 146 Q 206 152, 206 162 L 206 167 Q 206 172, 201 175 L 191 177" fill="var(--vertebra)" stroke="var(--vertebra-stroke)" stroke-width="1.2"/>
+              <text x="82" y="156" class="anat-label" text-anchor="end">L2</text>
+            </g>
+            <ellipse cx="140" cy="178" rx="44" ry="5" fill="var(--disc)" stroke="var(--vertebra-stroke)" stroke-width="0.8"/>
+
+            <!-- L3 -->
+            <g>
+              <rect x="94" y="184" width="92" height="38" rx="4" fill="var(--vertebra)" stroke="var(--vertebra-stroke)" stroke-width="1.2"/>
+              <path d="M 186 196 Q 210 203, 210 213 L 210 219 Q 210 224, 205 227 L 193 229" fill="var(--vertebra)" stroke="var(--vertebra-stroke)" stroke-width="1.2"/>
+              <text x="80" y="207" class="anat-label" text-anchor="end">L3</text>
+            </g>
+            <ellipse cx="140" cy="230" rx="46" ry="5" fill="var(--disc)" stroke="var(--vertebra-stroke)" stroke-width="0.8"/>
+
+            <!-- L4 -->
+            <g>
+              <rect x="92" y="236" width="96" height="40" rx="4" fill="var(--vertebra)" stroke="var(--vertebra-stroke)" stroke-width="1.2"/>
+              <path d="M 188 248 Q 214 256, 214 266 L 214 272 Q 214 277, 209 280 L 195 282" fill="var(--vertebra)" stroke="var(--vertebra-stroke)" stroke-width="1.2"/>
+              <text x="78" y="260" class="anat-label" text-anchor="end">L4</text>
+            </g>
+
+            <!-- L4-L5 DISC (HOTSPOT - mild bulge) -->
+            <g class="hotspot" data-level="L4-L5">
+              <ellipse cx="140" cy="284" rx="48" ry="6" fill="var(--disc)" stroke="var(--vertebra-stroke)" stroke-width="0.8"/>
+              <!-- mild posterior bulge -->
+              <path d="M 178 282 Q 194 286, 188 290 Q 184 290, 178 286 Z" fill="var(--disc-bad)" opacity="0.6" stroke="var(--rust-deep)" stroke-width="0.6"/>
+              <text x="195" y="288" class="anat-label anat-label-rust">L4-L5</text>
+            </g>
+
+            <!-- L5 -->
+            <g>
+              <rect x="92" y="292" width="96" height="38" rx="4" fill="var(--vertebra)" stroke="var(--vertebra-stroke)" stroke-width="1.2"/>
+              <path d="M 188 304 Q 214 312, 214 322 L 214 328 Q 214 333, 209 336 L 195 338" fill="var(--vertebra)" stroke="var(--vertebra-stroke)" stroke-width="1.2"/>
+              <text x="78" y="315" class="anat-label" text-anchor="end">L5</text>
+            </g>
+
+            <!-- L5-S1 DISC (HOTSPOT - bigger bulge, leftward in side view this means posterior) -->
+            <g class="hotspot" data-level="L5-S1">
+              <ellipse cx="140" cy="338" rx="48" ry="7" fill="var(--disc)" stroke="var(--vertebra-stroke)" stroke-width="0.8"/>
+              <!-- larger posterior bulge -->
+              <path d="M 178 335 Q 200 340, 192 348 Q 184 348, 176 342 Z" fill="var(--disc-bad)" opacity="0.85" stroke="var(--rust-deep)" stroke-width="0.8"/>
+              <text x="200" y="343" class="anat-label anat-label-rust">L5-S1</text>
+            </g>
+
+            <!-- Sacrum -->
+            <g>
+              <path d="M 96 346 Q 100 380, 110 410 L 175 425 Q 195 405, 200 380 L 198 350 Z" fill="var(--vertebra)" stroke="var(--vertebra-stroke)" stroke-width="1.2"/>
+              <text x="82" y="385" class="anat-label" text-anchor="end">S1</text>
+              <text x="82" y="410" class="anat-label" text-anchor="end">SACRUM</text>
+            </g>
+
+            <!-- nerve root indicator (exiting at L5-S1) -->
+            <g class="hotspot" data-level="L5-nerve">
+              <path d="M 188 340 Q 210 348, 218 360 Q 222 372, 218 386" fill="none" stroke="var(--nerve-irritated)" stroke-width="2.5" stroke-linecap="round"/>
+              <circle cx="218" cy="386" r="3" fill="var(--nerve-irritated)"/>
+              <text x="225" y="370" class="anat-label anat-label-rust">L5 root</text>
+              <text x="225" y="382" class="anat-label" style="opacity:0.6">(exiting)</text>
+            </g>
+
+            <!-- Title labels -->
+            <text x="140" y="20" class="anat-label" text-anchor="middle" style="font-size:10px; opacity:0.5;">SAGITTAL · LATERAL VIEW</text>
+            <text x="20" y="240" class="anat-label" style="font-size:9px; opacity:0.5; transform:rotate(-90deg); transform-origin:20px 240px;">ANTERIOR ←  → POSTERIOR</text>
+          </svg>
+
+          <!-- BACK VIEW SVG -->
+          <svg class="spine-svg" id="svg-back" viewBox="0 0 280 460" xmlns="http://www.w3.org/2000/svg" style="display:none;">
+            <defs>
+              <pattern id="grid-back" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(26,24,20,0.04)" stroke-width="0.5"/>
+              </pattern>
+            </defs>
+            <rect width="280" height="460" fill="url(#grid-back)"/>
+
+            <!-- L (left) / R (right) labels - reminder: anatomically left is on viewer's right -->
+            <text x="60" y="22" class="anat-label" style="opacity:0.55;">RIGHT</text>
+            <text x="220" y="22" class="anat-label" style="opacity:0.55;">LEFT</text>
+
+            <!-- vertebrae back view: more rectangular with spinous process -->
+            <!-- T12 -->
+            <g>
+              <rect x="100" y="40" width="80" height="30" rx="3" fill="var(--vertebra)" stroke="var(--vertebra-stroke)" stroke-width="1.2"/>
+              <rect x="135" y="48" width="10" height="14" fill="var(--vertebra)" stroke="var(--vertebra-stroke)" stroke-width="1"/>
+              <text x="86" y="58" class="anat-label" text-anchor="end">T12</text>
+            </g>
+            <ellipse cx="140" cy="78" rx="40" ry="4" fill="var(--disc)" stroke="var(--vertebra-stroke)" stroke-width="0.8"/>
+
+            <!-- L1 -->
+            <g>
+              <rect x="98" y="84" width="84" height="32" rx="3" fill="var(--vertebra)" stroke="var(--vertebra-stroke)" stroke-width="1.2"/>
+              <rect x="135" y="92" width="10" height="16" fill="var(--vertebra)" stroke="var(--vertebra-stroke)" stroke-width="1"/>
+              <text x="84" y="104" class="anat-label" text-anchor="end">L1</text>
+            </g>
+            <ellipse cx="140" cy="124" rx="42" ry="4" fill="var(--disc)" stroke="var(--vertebra-stroke)" stroke-width="0.8"/>
+
+            <!-- L2 -->
+            <g>
+              <rect x="96" y="130" width="88" height="34" rx="3" fill="var(--vertebra)" stroke="var(--vertebra-stroke)" stroke-width="1.2"/>
+              <rect x="135" y="138" width="10" height="18" fill="var(--vertebra)" stroke="var(--vertebra-stroke)" stroke-width="1"/>
+              <text x="82" y="151" class="anat-label" text-anchor="end">L2</text>
+            </g>
+            <ellipse cx="140" cy="172" rx="44" ry="4" fill="var(--disc)" stroke="var(--vertebra-stroke)" stroke-width="0.8"/>
+
+            <!-- L3 -->
+            <g>
+              <rect x="94" y="178" width="92" height="36" rx="3" fill="var(--vertebra)" stroke="var(--vertebra-stroke)" stroke-width="1.2"/>
+              <rect x="135" y="186" width="10" height="20" fill="var(--vertebra)" stroke="var(--vertebra-stroke)" stroke-width="1"/>
+              <text x="80" y="200" class="anat-label" text-anchor="end">L3</text>
+            </g>
+            <ellipse cx="140" cy="222" rx="46" ry="4" fill="var(--disc)" stroke="var(--vertebra-stroke)" stroke-width="0.8"/>
+
+            <!-- L4 -->
+            <g>
+              <rect x="92" y="228" width="96" height="38" rx="3" fill="var(--vertebra)" stroke="var(--vertebra-stroke)" stroke-width="1.2"/>
+              <rect x="135" y="236" width="10" height="22" fill="var(--vertebra)" stroke="var(--vertebra-stroke)" stroke-width="1"/>
+              <text x="78" y="251" class="anat-label" text-anchor="end">L4</text>
+            </g>
+
+            <!-- L4-L5 DISC (back view, mild bulge bilateral) -->
+            <g class="hotspot" data-level="L4-L5">
+              <ellipse cx="140" cy="274" rx="48" ry="5" fill="var(--disc)" stroke="var(--vertebra-stroke)" stroke-width="0.8"/>
+              <ellipse cx="98" cy="274" rx="6" ry="3" fill="var(--disc-bad)" opacity="0.5"/>
+              <ellipse cx="182" cy="274" rx="6" ry="3" fill="var(--disc-bad)" opacity="0.5"/>
+              <text x="195" y="278" class="anat-label anat-label-rust">L4-L5</text>
+            </g>
+
+            <!-- L5 -->
+            <g>
+              <rect x="92" y="282" width="96" height="36" rx="3" fill="var(--vertebra)" stroke="var(--vertebra-stroke)" stroke-width="1.2"/>
+              <rect x="135" y="290" width="10" height="20" fill="var(--vertebra)" stroke="var(--vertebra-stroke)" stroke-width="1"/>
+              <text x="78" y="303" class="anat-label" text-anchor="end">L5</text>
+            </g>
+
+            <!-- L5-S1 DISC (asymmetric leftward = on viewer's right side) -->
+            <g class="hotspot" data-level="L5-S1">
+              <ellipse cx="140" cy="326" rx="48" ry="6" fill="var(--disc)" stroke="var(--vertebra-stroke)" stroke-width="0.8"/>
+              <!-- left-asymmetric prominence (on viewer's right) -->
+              <ellipse cx="186" cy="326" rx="14" ry="5" fill="var(--disc-bad)" opacity="0.85" stroke="var(--rust-deep)" stroke-width="0.6"/>
+              <ellipse cx="100" cy="326" rx="5" ry="3" fill="var(--disc-bad)" opacity="0.4"/>
+              <text x="200" y="332" class="anat-label anat-label-rust">L5-S1</text>
+            </g>
+
+            <!-- Sacrum back view -->
+            <g>
+              <path d="M 96 334 L 100 380 L 130 415 L 175 415 L 198 380 L 198 338 Z" fill="var(--vertebra)" stroke="var(--vertebra-stroke)" stroke-width="1.2"/>
+              <text x="140" y="385" class="anat-label" text-anchor="middle">SACRUM</text>
+            </g>
+
+            <!-- L5 nerve root LEFT side -->
+            <g class="hotspot" data-level="L5-nerve">
+              <path d="M 188 326 Q 215 332, 222 348 Q 226 365, 222 385" fill="none" stroke="var(--nerve-irritated)" stroke-width="2.5" stroke-linecap="round"/>
+              <circle cx="222" cy="385" r="3" fill="var(--nerve-irritated)"/>
+              <text x="228" y="360" class="anat-label anat-label-rust">L5 (L)</text>
+            </g>
+
+            <!-- L5 nerve root RIGHT side -->
+            <g>
+              <path d="M 92 326 Q 65 332, 58 348 Q 54 365, 58 385" fill="none" stroke="var(--nerve)" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+              <circle cx="58" cy="385" r="2.5" fill="var(--nerve)" opacity="0.7"/>
+              <text x="35" y="360" class="anat-label" style="opacity:0.7">L5 (R)</text>
+            </g>
+
+            <!-- S1 nerves bilateral -->
+            <g>
+              <path d="M 110 360 Q 100 380, 110 400" fill="none" stroke="var(--nerve)" stroke-width="1.5" opacity="0.6"/>
+              <path d="M 170 360 Q 180 380, 170 400" fill="none" stroke="var(--nerve)" stroke-width="1.5" opacity="0.6"/>
+              <text x="140" y="408" class="anat-label" text-anchor="middle" style="opacity:0.6;">S1 ROOTS</text>
+            </g>
+
+            <text x="140" y="20" class="anat-label" text-anchor="middle" style="font-size:10px; opacity:0.5;">POSTERIOR · BACK VIEW</text>
+          </svg>
+        </div>
+      </div>
+
+      <div class="info-panel">
+        <h3>Inspection</h3>
+        <div class="info-content" id="info-content">
+          <p><strong>Click any highlighted level</strong> on the diagram to see what's typically described at that level on MRI.</p>
+          <p>Three areas are interactive: the L4-L5 disc, the L5-S1 disc, and the L5 nerve root — the one most commonly implicated in big-toe / dorsal-foot numbness.</p>
+        </div>
+
+        <div class="legend">
+          <div class="legend-item">
+            <span class="legend-swatch" style="background:var(--vertebra);"></span>
+            Vertebral body
+          </div>
+          <div class="legend-item">
+            <span class="legend-swatch" style="background:var(--disc);"></span>
+            Healthy disc
+          </div>
+          <div class="legend-item">
+            <span class="legend-swatch" style="background:var(--disc-bad); border-color:var(--rust-deep);"></span>
+            Disc bulge / annular tear
+          </div>
+          <div class="legend-item">
+            <span class="legend-swatch" style="background:var(--nerve-irritated); border-color:var(--rust-deep);"></span>
+            Irritated nerve root
+          </div>
+          <div class="legend-item">
+            <span class="legend-swatch" style="background:var(--nerve); opacity:0.7;"></span>
+            Normal nerve root
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LOAD VISUALIZATION SECTION -->
+  <section class="diagram-section">
+    <div class="section-header">
+      <span class="section-num">02</span>
+      <h2>Load on the L3 disc</h2>
+      <span class="section-meta">By position · classic biomechanics</span>
+    </div>
+    <p class="section-intro">These numbers come from Nachemson's intradiscal pressure studies and modern biomechanics modeling. Disc pressure varies enormously by position — the difference between a "good" and "bad" lifting technique can be many hundreds of pounds of compressive force on the discs. Standing upright is the baseline reference (100%).</p>
+
+    <div class="load-layout">
+      <div>
+        <div class="position-buttons">
+          <button class="position-btn active" data-pos="lying">
+            <span class="label">Lying on back</span>
+            <span class="source">~25% baseline</span>
+          </button>
+          <button class="position-btn" data-pos="standing">
+            <span class="label">Standing relaxed</span>
+            <span class="source">100% baseline</span>
+          </button>
+          <button class="position-btn" data-pos="walking">
+            <span class="label">Walking</span>
+            <span class="source">~115%</span>
+          </button>
+          <button class="position-btn" data-pos="sit-good">
+            <span class="label">Sitting upright</span>
+            <span class="source">~140%</span>
+          </button>
+          <button class="position-btn" data-pos="sit-slouch">
+            <span class="label">Slouched sitting</span>
+            <span class="source">~190%</span>
+          </button>
+          <button class="position-btn" data-pos="bend">
+            <span class="label">Bending forward</span>
+            <span class="source">~150%</span>
+          </button>
+          <button class="position-btn" data-pos="lift-close">
+            <span class="label">Lift 30 lbs · close</span>
+            <span class="source">Hip hinge, body</span>
+          </button>
+          <button class="position-btn" data-pos="lift-far">
+            <span class="label">Lift 30 lbs · far</span>
+            <span class="source">Arms extended</span>
+          </button>
+          <button class="position-btn" data-pos="lift-twist">
+            <span class="label">Lift + twist</span>
+            <span class="source">Worst case</span>
+          </button>
+          <button class="position-btn" data-pos="cough">
+            <span class="label">Coughing/sneezing</span>
+            <span class="source">Brief spike</span>
+          </button>
+        </div>
+
+        <div class="position-info" id="position-info">
+          <h4 id="pos-title">Lying on back</h4>
+          <p id="pos-desc">The lowest sustainable load on your discs. Roughly 25% of standing load. This is why mornings often feel best — your discs have been decompressed overnight. (And also why disc bulges are sometimes more provocable in the morning, when discs are most hydrated.)</p>
+        </div>
+      </div>
+
+      <div class="load-visual">
+        <svg class="figure-svg" id="figure-svg" viewBox="0 0 240 320" xmlns="http://www.w3.org/2000/svg">
+          <!-- Figure will be drawn here, swaps based on position -->
+        </svg>
+
+        <div class="load-readout">
+          <div class="load-number" id="load-number">~75<span class="unit">lbs</span></div>
+          <div class="load-bar"><div class="load-bar-fill" id="load-bar-fill"></div></div>
+          <div class="load-relative">Relative to standing: <strong id="load-pct">25%</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="citation">
+      <strong>Sources & caveats</strong>
+      Numbers approximated from Nachemson AL (1981) intradiscal pressure studies, Wilke et al. (1999) in vivo measurements, and McGill SM (2007) compression force modeling. Standing baseline ≈ 300 lbs / ~1400 N of compressive force on the L3 disc for an average adult — values shown above scale that. Real loads depend on body weight, lifted weight, lever arm, posture, muscle activation, and disc geometry. Use these as relative comparisons, not personal predictions. The point is the pattern: posture and lever-arm length dominate disc load, often more than the absolute weight being lifted.
+    </div>
+  </section>
+
+  <a href="./" class="nav-back">← back to plan</a>
+
+</div>
+
+<script>
+  // ============== ANATOMY PANEL CONTENT ==============
+  const anatomyData = {
+    'L4-L5': {
+      title: 'L4-L5 disc level',
+      content: `
+        <p><strong>Common findings:</strong> Disc bulge with or without an annular tear. Lateral recess encroachment. Ligamentum flavum hypertrophy. Facet arthrosis.</p>
+        <p>The lateral recess is the corridor where nerve roots travel before they exit. Mild encroachment means there's some narrowing, but typically not severe compression.</p>
+        <p>L4-L5 changes most commonly affect the <em>L5 nerve root</em> as it descends through the lateral recess toward its exit one level below.</p>
+      `
+    },
+    'L5-S1': {
+      title: 'L5-S1 disc level',
+      content: `
+        <p><strong>Common findings:</strong> Disc bulge or protrusion, often with endplate osteophytes. Can be central, paracentral, foraminal, or extraforaminal — and asymmetric to one side. Annular tears are common.</p>
+        <p>Foraminal narrowing at L5-S1 affects the <em>L5 nerve root</em> as it exits. Central or paracentral disc material can also abut the descending S1 nerve roots.</p>
+        <p>L5-S1 is the most commonly affected level in the lumbar spine, partly because it sits at the transition between the mobile lumbar spine and the fixed sacrum, where mechanical stress concentrates.</p>
+      `
+    },
+    'L5-nerve': {
+      title: 'L5 nerve root',
+      content: `
+        <p><strong>The L5 nerve root</strong> exits the spine through the foramen at L5-S1.</p>
+        <p>When the foramen is narrowed, the nerve gets compressed and inflamed. That inflammation produces the symptoms experienced downstream.</p>
+        <p><strong>L5 dermatome:</strong> top of the foot, big toe, second toe — the classic distribution for L5 radiculopathy.</p>
+        <p>A transforaminal epidural steroid injection (TFESI) delivers steroid right around this nerve root to reduce inflammation. It doesn't fix the underlying narrowing, but a calmer nerve in the same anatomy can mean fewer symptoms.</p>
+      `
+    }
+  };
+
+  // Wire up hotspots
+  document.querySelectorAll('.hotspot').forEach(spot => {
+    spot.addEventListener('click', () => {
+      const level = spot.dataset.level;
+      // remove active from all
+      document.querySelectorAll('.hotspot').forEach(s => s.classList.remove('active'));
+      // mark all matching as active (across both views)
+      document.querySelectorAll(`.hotspot[data-level="${level}"]`).forEach(s => s.classList.add('active'));
+      // update info panel
+      const data = anatomyData[level];
+      if (data) {
+        document.getElementById('info-content').innerHTML =
+          `<p style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--rust);margin-bottom:8px;">${data.title}</p>` +
+          data.content;
+      }
+    });
+  });
+
+  // View tabs
+  document.querySelectorAll('.view-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const view = tab.dataset.view;
+      document.getElementById('svg-side').style.display = view === 'side' ? 'block' : 'none';
+      document.getElementById('svg-back').style.display = view === 'back' ? 'block' : 'none';
+    });
+  });
+
+  // ============== LOAD VISUALIZATION ==============
+  // Standing baseline: ~300 lbs of compressive force on L3 (rough average for adult)
+  const STANDING_BASELINE = 300;
+
+  const positions = {
+    'lying': {
+      title: 'Lying on back',
+      desc: "The lowest sustainable load on the discs. Roughly 25% of standing load. This is why mornings often feel best — discs decompress overnight. (Also why disc bulges can sometimes feel more provocable in the morning, when discs are most hydrated.)",
+      pct: 25,
+      figure: 'lying'
+    },
+    'standing': {
+      title: 'Standing relaxed',
+      desc: "Baseline reference. The pressure of upright posture, with no added load. Note that this is far from \"zero\" — the spine is always working against gravity to hold you upright.",
+      pct: 100,
+      figure: 'standing'
+    },
+    'walking': {
+      title: 'Walking',
+      desc: "Slightly higher than standing due to dynamic loading and muscle activation. But walking is excellent for disc nutrition — the gentle pressure changes pump fluid in and out, keeping discs healthy. This is why walking is recommended even during recovery.",
+      pct: 115,
+      figure: 'walking'
+    },
+    'sit-good': {
+      title: 'Sitting upright',
+      desc: "Sitting loads the lumbar discs more than standing — counterintuitive, but well-documented. The pelvis tilts back, the lumbar curve flattens, and pressure on the discs increases. \"Upright\" sitting with lumbar support keeps it in a more reasonable range.",
+      pct: 140,
+      figure: 'sit-good'
+    },
+    'sit-slouch': {
+      title: 'Slouched sitting',
+      desc: "The classic computer/couch posture. Disc load nearly doubles compared to standing. This is one of the worst chronic loads modern life imposes on a disc. If you sit a lot, this is probably your single most important thing to address.",
+      pct: 190,
+      figure: 'sit-slouch'
+    },
+    'bend': {
+      title: 'Bending forward (unloaded)',
+      desc: "Forward flexion alone — without any weight in your hands — significantly increases disc pressure. The further forward you go, the more your upper body becomes a lever arm pulling on your discs.",
+      pct: 150,
+      figure: 'bend'
+    },
+    'lift-close': {
+      title: 'Lifting 30 lbs · held close',
+      desc: "Lifting a toddler-sized load with proper hip-hinge technique, held against the chest. Load is significantly elevated but not catastrophic. This is the goal posture every time you pick up a child.",
+      pct: 220,
+      figure: 'lift-close'
+    },
+    'lift-far': {
+      title: 'Lifting 30 lbs · arms extended',
+      desc: "Same 30-lb load, but held away from the body. The lever-arm physics is brutal — every additional inch of distance from the spine multiplies the load. This is why \"keep it close\" matters more than almost any other lifting cue.",
+      pct: 380,
+      figure: 'lift-far'
+    },
+    'lift-twist': {
+      title: 'Lifting + twisting',
+      desc: "The combination of forward flexion + load + rotation. This is what happens during a car-seat transfer if you don't square up first. The shear forces on the disc annulus (the outer ring) are at their highest here. Worst-case scenario for an already-injured disc.",
+      pct: 450,
+      figure: 'lift-twist'
+    },
+    'cough': {
+      title: 'Coughing or sneezing',
+      desc: "A brief but enormous spike — intra-abdominal pressure surges and disc pressure can transiently exceed loaded lifting. Usually harmless on a healthy disc; can provoke flares on a compromised one. Tip: brace the core and bend slightly forward when you feel a cough or sneeze coming.",
+      pct: 320,
+      figure: 'standing'
+    }
+  };
+
+  const figures = {
+    lying: `<g stroke="var(--ink)" stroke-width="1.5" fill="var(--bone)" stroke-linejoin="round" stroke-linecap="round">
+      <line x1="20" y1="200" x2="220" y2="200" stroke-width="1" opacity="0.3"/>
+      <ellipse cx="50" cy="180" rx="14" ry="14"/>
+      <path d="M 64 180 L 130 180 L 130 200 L 64 200 Z" fill="var(--bone)"/>
+      <path d="M 130 180 L 165 180 L 165 195 L 195 198 L 195 195 L 200 195" fill="var(--bone)"/>
+      <line x1="130" y1="195" x2="200" y2="195"/>
+      <text x="120" y="240" class="anat-label" text-anchor="middle" style="font-size:9px; opacity:0.6;">SUPINE · DISCS DECOMPRESSED</text>
+    </g>`,
+
+    standing: `<g stroke="var(--ink)" stroke-width="1.5" fill="var(--bone)" stroke-linejoin="round" stroke-linecap="round">
+      <ellipse cx="120" cy="50" rx="14" ry="16"/>
+      <path d="M 120 66 L 120 80"/>
+      <path d="M 100 90 Q 120 84, 140 90 L 138 160 Q 130 165, 120 165 Q 110 165, 102 160 Z"/>
+      <path d="M 102 160 L 100 230 L 110 230 L 118 165"/>
+      <path d="M 138 160 L 140 230 L 130 230 L 122 165"/>
+      <path d="M 100 90 L 80 130"/>
+      <path d="M 140 90 L 160 130"/>
+      <line x1="120" y1="80" x2="120" y2="160" stroke="var(--rust)" stroke-width="2" opacity="0.5"/>
+      <text x="120" y="270" class="anat-label" text-anchor="middle" style="font-size:9px; opacity:0.6;">UPRIGHT · BASELINE</text>
+    </g>`,
+
+    walking: `<g stroke="var(--ink)" stroke-width="1.5" fill="var(--bone)" stroke-linejoin="round" stroke-linecap="round">
+      <ellipse cx="120" cy="50" rx="14" ry="16"/>
+      <path d="M 120 66 L 120 80"/>
+      <path d="M 100 90 Q 120 84, 140 90 L 138 160 Q 130 165, 120 165 Q 110 165, 102 160 Z"/>
+      <path d="M 102 160 L 90 235"/>
+      <path d="M 138 160 L 145 232"/>
+      <path d="M 100 90 L 75 125"/>
+      <path d="M 140 90 L 165 135"/>
+      <line x1="120" y1="80" x2="120" y2="160" stroke="var(--rust)" stroke-width="2" opacity="0.5"/>
+      <text x="120" y="270" class="anat-label" text-anchor="middle" style="font-size:9px; opacity:0.6;">DYNAMIC · DISC HEALTHY</text>
+    </g>`,
+
+    'sit-good': `<g stroke="var(--ink)" stroke-width="1.5" fill="var(--bone)" stroke-linejoin="round" stroke-linecap="round">
+      <ellipse cx="100" cy="60" rx="14" ry="16"/>
+      <path d="M 100 76 L 102 90"/>
+      <path d="M 86 100 Q 102 92, 118 100 L 122 170 L 86 170 Z"/>
+      <path d="M 86 170 L 86 175 L 175 175 L 175 170"/>
+      <path d="M 122 170 L 175 170"/>
+      <path d="M 175 170 L 175 240"/>
+      <path d="M 86 100 L 65 145"/>
+      <path d="M 118 100 L 135 145"/>
+      <line x1="100" y1="90" x2="100" y2="170" stroke="var(--rust)" stroke-width="2" opacity="0.5"/>
+      <line x1="60" y1="240" x2="200" y2="240" stroke-width="1"/>
+      <text x="120" y="270" class="anat-label" text-anchor="middle" style="font-size:9px; opacity:0.6;">SITTING · LUMBAR LORDOSIS PRESERVED</text>
+    </g>`,
+
+    'sit-slouch': `<g stroke="var(--ink)" stroke-width="1.5" fill="var(--bone)" stroke-linejoin="round" stroke-linecap="round">
+      <ellipse cx="115" cy="70" rx="14" ry="16"/>
+      <path d="M 115 86 Q 110 100, 100 110"/>
+      <path d="M 86 115 Q 100 108, 118 115 Q 124 145, 90 175 L 86 175 Z"/>
+      <path d="M 86 175 L 86 178 L 175 178 L 175 175"/>
+      <path d="M 118 175 L 175 175"/>
+      <path d="M 175 175 L 175 240"/>
+      <path d="M 86 115 L 70 150"/>
+      <path d="M 118 115 L 138 148"/>
+      <path d="M 115 90 Q 105 130, 90 175" stroke="var(--rust)" stroke-width="2" opacity="0.6" fill="none"/>
+      <line x1="60" y1="240" x2="200" y2="240" stroke-width="1"/>
+      <text x="120" y="270" class="anat-label" text-anchor="middle" style="font-size:9px; opacity:0.6;">SLOUCHED · SPINE FLEXED</text>
+    </g>`,
+
+    bend: `<g stroke="var(--ink)" stroke-width="1.5" fill="var(--bone)" stroke-linejoin="round" stroke-linecap="round">
+      <ellipse cx="180" cy="100" rx="14" ry="16"/>
+      <path d="M 167 105 Q 150 115, 130 130"/>
+      <path d="M 120 138 Q 140 130, 158 142 L 122 175 Q 110 170, 108 160 Z"/>
+      <path d="M 108 160 L 108 235 L 118 235 L 118 165"/>
+      <path d="M 122 175 L 130 235 L 120 235"/>
+      <path d="M 158 142 L 175 130"/>
+      <path d="M 130 132 L 165 95"/>
+      <path d="M 175 110 Q 150 130, 122 158" stroke="var(--rust)" stroke-width="2.5" opacity="0.6" fill="none"/>
+      <line x1="60" y1="240" x2="220" y2="240" stroke-width="1"/>
+      <text x="120" y="270" class="anat-label" text-anchor="middle" style="font-size:9px; opacity:0.6;">FORWARD FLEXION · HIGH SHEAR</text>
+    </g>`,
+
+    'lift-close': `<g stroke="var(--ink)" stroke-width="1.5" fill="var(--bone)" stroke-linejoin="round" stroke-linecap="round">
+      <ellipse cx="115" cy="55" rx="14" ry="16"/>
+      <path d="M 115 71 L 115 85"/>
+      <path d="M 95 95 Q 115 88, 135 95 L 135 165 Q 125 170, 115 170 Q 105 170, 95 165 Z"/>
+      <!-- toddler held close -->
+      <ellipse cx="115" cy="115" rx="22" ry="22" fill="var(--rust)" opacity="0.3" stroke="var(--rust-deep)"/>
+      <text x="115" y="119" class="anat-label" text-anchor="middle" style="font-size:8px; fill:var(--rust-deep);">30 LB</text>
+      <!-- arms wrapped around -->
+      <path d="M 95 95 Q 80 115, 92 130"/>
+      <path d="M 135 95 Q 150 115, 138 130"/>
+      <!-- legs in squat -->
+      <path d="M 95 165 Q 80 195, 95 235 L 105 235 L 110 170"/>
+      <path d="M 135 165 Q 150 195, 135 235 L 125 235 L 120 170"/>
+      <line x1="115" y1="85" x2="115" y2="165" stroke="var(--moss)" stroke-width="2" opacity="0.7"/>
+      <line x1="60" y1="240" x2="180" y2="240" stroke-width="1"/>
+      <text x="120" y="270" class="anat-label" text-anchor="middle" style="font-size:9px; opacity:0.6;">CLOSE · MINIMAL LEVER ARM</text>
+    </g>`,
+
+    'lift-far': `<g stroke="var(--ink)" stroke-width="1.5" fill="var(--bone)" stroke-linejoin="round" stroke-linecap="round">
+      <ellipse cx="100" cy="60" rx="14" ry="16"/>
+      <path d="M 100 76 L 100 90"/>
+      <path d="M 80 100 Q 100 93, 120 100 L 120 170 Q 110 175, 100 175 Q 90 175, 80 170 Z"/>
+      <!-- arms extended forward -->
+      <path d="M 80 100 Q 110 105, 145 110 L 175 115"/>
+      <path d="M 120 100 Q 145 105, 170 115 L 175 115"/>
+      <!-- toddler held far -->
+      <ellipse cx="190" cy="115" rx="20" ry="20" fill="var(--rust)" opacity="0.4" stroke="var(--rust-deep)"/>
+      <text x="190" y="119" class="anat-label" text-anchor="middle" style="font-size:8px; fill:var(--rust-deep);">30 LB</text>
+      <!-- straight legs -->
+      <path d="M 80 170 L 88 235"/>
+      <path d="M 120 170 L 112 235"/>
+      <!-- lever arm visualization -->
+      <line x1="100" y1="120" x2="190" y2="120" stroke="var(--rust)" stroke-width="1" stroke-dasharray="2,2"/>
+      <text x="145" y="135" class="anat-label anat-label-rust" text-anchor="middle" style="font-size:8px;">~3X LEVER ARM</text>
+      <line x1="60" y1="240" x2="220" y2="240" stroke-width="1"/>
+      <text x="120" y="270" class="anat-label" text-anchor="middle" style="font-size:9px; opacity:0.6;">EXTENDED · LEVER MAGNIFIES LOAD</text>
+    </g>`,
+
+    'lift-twist': `<g stroke="var(--ink)" stroke-width="1.5" fill="var(--bone)" stroke-linejoin="round" stroke-linecap="round">
+      <ellipse cx="120" cy="65" rx="13" ry="14" transform="rotate(15 120 65)"/>
+      <path d="M 122 80 Q 118 95, 112 110"/>
+      <!-- twisted torso -->
+      <path d="M 95 115 Q 115 105, 135 115 Q 145 145, 130 175 Q 115 178, 100 175 Z"/>
+      <!-- one arm forward, one back -->
+      <path d="M 95 115 Q 75 130, 70 155"/>
+      <path d="M 135 115 Q 165 125, 180 145"/>
+      <ellipse cx="180" cy="155" rx="18" ry="18" fill="var(--rust)" opacity="0.5" stroke="var(--rust-deep)"/>
+      <text x="180" y="159" class="anat-label" text-anchor="middle" style="font-size:8px; fill:var(--rust-deep);">30 LB</text>
+      <path d="M 100 175 L 95 235 L 105 235 L 112 178"/>
+      <path d="M 130 175 L 138 235 L 128 235 L 122 178"/>
+      <!-- twist arrow -->
+      <path d="M 130 100 Q 155 95, 165 105" fill="none" stroke="var(--rust)" stroke-width="1.5" marker-end="url(#arrow)"/>
+      <defs>
+        <marker id="arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+          <polygon points="0 0, 6 3, 0 6" fill="var(--rust)"/>
+        </marker>
+      </defs>
+      <line x1="60" y1="240" x2="220" y2="240" stroke-width="1"/>
+      <text x="120" y="270" class="anat-label anat-label-rust" text-anchor="middle" style="font-size:9px;">TWIST + LIFT · WORST CASE</text>
+    </g>`
+  };
+
+  function selectPosition(key) {
+    const data = positions[key];
+    if (!data) return;
+
+    document.querySelectorAll('.position-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.pos === key);
+    });
+
+    document.getElementById('pos-title').textContent = data.title;
+    document.getElementById('pos-desc').textContent = data.desc;
+
+    const lbs = Math.round(STANDING_BASELINE * data.pct / 100);
+    const num = document.getElementById('load-number');
+    num.innerHTML = `~${lbs}<span class="unit">lbs</span>`;
+
+    // color shifts with severity
+    const pct = data.pct;
+    if (pct < 100) num.style.color = 'var(--moss)';
+    else if (pct < 200) num.style.color = 'var(--ink)';
+    else if (pct < 350) num.style.color = 'var(--rust)';
+    else num.style.color = 'var(--rust-deep)';
+
+    // bar fill (cap at 100% visual, max realistic ~500%)
+    const fillPct = Math.min(100, pct / 5);
+    document.getElementById('load-bar-fill').style.width = fillPct + '%';
+
+    document.getElementById('load-pct').textContent = pct + '%';
+
+    // swap figure
+    const fig = figures[data.figure] || figures.standing;
+    document.getElementById('figure-svg').innerHTML = fig;
+  }
+
+  document.querySelectorAll('.position-btn').forEach(btn => {
+    btn.addEventListener('click', () => selectPosition(btn.dataset.pos));
+  });
+
+  // init
+  selectPosition('lying');
+</script>
+
+</body>
+</html>

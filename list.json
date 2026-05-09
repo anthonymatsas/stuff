@@ -35,6 +35,13 @@
 		"category": "HTML/JS"
 	},
 	{
+		"name": "Lumbar Recovery Protocol",
+		"path": "spine-research",
+		"desc": "Home exercise program and lifting guide for L4-L5 / L5-S1 disc-related lumbar radiculopathy. Includes anatomy & disc-loading reference.",
+		"tag": ["llm", "opus 4.7"],
+		"category": "HTML/JS"
+	},
+	{
 		"name": "milo",
 		"url": "https://github.com/anthonymatsas/milo",
 		"desc": "cli tool exposing apples on device foundation models",

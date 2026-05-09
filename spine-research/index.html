@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lumbar Recovery Protocol</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600;9..144,800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1814;
+    --paper: #f4ede0;
+    --paper-warm: #ebe1cf;
+    --rust: #b8451f;
+    --rust-deep: #8a3216;
+    --moss: #5a6b3d;
+    --bone: #d9cfb8;
+    --shadow: rgba(26, 24, 20, 0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Fraunces', Georgia, serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.55;
+    font-size: 17px;
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(184, 69, 31, 0.04) 0%, transparent 40%),
+      radial-gradient(circle at 80% 90%, rgba(90, 107, 61, 0.05) 0%, transparent 40%);
+    min-height: 100vh;
+  }
+
+  .container {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 60px 32px 120px;
+  }
+
+  /* HEADER */
+  header {
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 32px;
+    margin-bottom: 48px;
+    position: relative;
+  }
+
+  .meta-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--rust);
+    margin-bottom: 16px;
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .meta-tag span::before {
+    content: "▸ ";
+    color: var(--ink);
+  }
+
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 300;
+    font-size: clamp(42px, 7vw, 76px);
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+    font-variation-settings: "opsz" 144;
+  }
+
+  h1 em {
+    font-style: italic;
+    font-weight: 600;
+    color: var(--rust);
+  }
+
+  .subtitle {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--ink);
+    opacity: 0.65;
+    margin-top: 24px;
+    max-width: 580px;
+    line-height: 1.6;
+  }
+
+  /* PROGRESS BAR */
+  .progress-wrap {
+    margin: 40px 0 60px;
+    padding: 20px 24px;
+    background: var(--paper-warm);
+    border: 1px solid var(--bone);
+    border-radius: 2px;
+  }
+
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .progress-label span:last-child {
+    color: var(--rust);
+    font-weight: 700;
+  }
+
+  .progress-bar {
+    height: 4px;
+    background: var(--bone);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--rust);
+    width: 0%;
+    transition: width 0.4s ease;
+  }
+
+  /* DISCLAIMER */
+  .disclaimer {
+    border-left: 3px solid var(--rust);
+    padding: 16px 20px;
+    background: rgba(184, 69, 31, 0.04);
+    margin-bottom: 48px;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .disclaimer strong {
+    font-weight: 600;
+    color: var(--rust-deep);
+  }
+
+  /* SECTION */
+  section {
+    margin-bottom: 64px;
+    scroll-margin-top: 24px;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 20px;
+    margin-bottom: 8px;
+    border-bottom: 1px dashed var(--ink);
+    padding-bottom: 12px;
+  }
+
+  .section-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--rust);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+  }
+
+  h2 {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: clamp(26px, 4vw, 36px);
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    flex: 1;
+    font-variation-settings: "opsz" 144;
+  }
+
+  .section-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink);
+    opacity: 0.55;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .section-intro {
+    font-size: 16px;
+    margin: 16px 0 28px;
+    max-width: 720px;
+    color: rgba(26, 24, 20, 0.78);
+    font-style: italic;
+  }
+
+  /* SUBSECTION */
+  .subsection {
+    margin-top: 32px;
+  }
+
+  h3 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--moss);
+    margin-bottom: 16px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--bone);
+  }
+
+  /* EXERCISE CARD */
+  .exercise {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 16px;
+    align-items: start;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    background: var(--paper-warm);
+    border: 1px solid transparent;
+    border-radius: 3px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .exercise:hover {
+    border-color: var(--bone);
+    transform: translateX(2px);
+  }
+
+  .exercise.done {
+    background: rgba(90, 107, 61, 0.08);
+    border-color: rgba(90, 107, 61, 0.2);
+  }
+
+  .exercise.done .ex-name {
+    text-decoration: line-through;
+    text-decoration-color: var(--moss);
+    opacity: 0.6;
+  }
+
+  .checkbox {
+    width: 22px;
+    height: 22px;
+    border: 1.5px solid var(--ink);
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+    margin-top: 2px;
+    background: var(--paper);
+  }
+
+  .exercise.done .checkbox {
+    background: var(--moss);
+    border-color: var(--moss);
+  }
+
+  .checkbox::after {
+    content: "✓";
+    color: var(--paper);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .exercise.done .checkbox::after {
+    opacity: 1;
+  }
+
+  .ex-content { flex: 1; }
+
+  .ex-name {
+    font-family: 'Fraunces', serif;
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.3;
+    margin-bottom: 2px;
+  }
+
+  .ex-prescription {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--rust);
+    letter-spacing: 0.05em;
+  }
+
+  .ex-note {
+    font-size: 13px;
+    color: rgba(26, 24, 20, 0.7);
+    margin-top: 4px;
+    font-style: italic;
+  }
+
+  .timer-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    padding: 6px 12px;
+    border-radius: 2px;
+    cursor: pointer;
+    align-self: center;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+
+  .timer-btn:hover {
+    background: var(--rust);
+    transform: scale(1.03);
+  }
+
+  .timer-btn.running {
+    background: var(--rust);
+    animation: pulse 1s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  /* WARNING BLOCKS */
+  .avoid-block, .flare-block, .lifting-block {
+    background: var(--paper-warm);
+    border: 1px solid var(--bone);
+    padding: 24px 28px;
+    border-radius: 3px;
+    margin-top: 16px;
+  }
+
+  .avoid-block {
+    border-left: 4px solid var(--rust);
+  }
+
+  .flare-block {
+    border-left: 4px solid var(--moss);
+  }
+
+  .avoid-block h4, .flare-block h4, .lifting-block h4 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    color: var(--rust-deep);
+  }
+
+  .flare-block h4 { color: var(--moss); }
+
+  .avoid-block ul, .flare-block ul, .lifting-block ul {
+    list-style: none;
+    padding-left: 0;
+  }
+
+  .avoid-block li, .flare-block li, .lifting-block li {
+    padding: 6px 0 6px 24px;
+    position: relative;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  .avoid-block li::before {
+    content: "✗";
+    position: absolute;
+    left: 0;
+    color: var(--rust);
+    font-weight: 700;
+  }
+
+  .flare-block li::before {
+    content: "→";
+    position: absolute;
+    left: 0;
+    color: var(--moss);
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* LIFTING SECTION */
+  .scenario {
+    margin-top: 24px;
+    padding: 20px 24px;
+    background: var(--paper);
+    border: 1px solid var(--bone);
+    border-radius: 3px;
+  }
+
+  .scenario h4 {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 600;
+    font-size: 19px;
+    color: var(--rust-deep);
+    margin-bottom: 10px;
+  }
+
+  .scenario p {
+    font-size: 15px;
+    line-height: 1.6;
+    margin-bottom: 8px;
+  }
+
+  .scenario .key {
+    background: rgba(184, 69, 31, 0.1);
+    padding: 1px 5px;
+    border-radius: 2px;
+    font-weight: 600;
+  }
+
+  /* EMERGENCY */
+  .emergency {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 32px;
+    border-radius: 3px;
+    margin-top: 48px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .emergency::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: var(--rust);
+  }
+
+  .emergency h3 {
+    color: var(--rust);
+    border: none;
+    margin-bottom: 16px;
+    font-size: 13px;
+  }
+
+  .emergency p {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--bone);
+  }
+
+  .emergency strong {
+    color: var(--paper);
+    font-weight: 600;
+  }
+
+  /* TIMER MODAL */
+  .timer-display {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--ink);
+    color: var(--paper);
+    padding: 16px 24px;
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    letter-spacing: 0.1em;
+    box-shadow: 0 8px 24px var(--shadow);
+    display: none;
+    z-index: 100;
+    border: 1px solid var(--rust);
+  }
+
+  .timer-display.active {
+    display: block;
+    animation: slideUp 0.3s ease;
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .timer-display .label {
+    font-size: 10px;
+    color: var(--rust);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .timer-display .count {
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1;
+    font-family: 'Fraunces', serif;
+  }
+
+  .timer-display button {
+    background: transparent;
+    color: var(--paper);
+    border: 1px solid var(--bone);
+    padding: 4px 10px;
+    margin-top: 8px;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    border-radius: 2px;
+  }
+
+  /* RESET BUTTON */
+  .reset-btn {
+    position: fixed;
+    bottom: 24px;
+    left: 24px;
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--ink);
+    padding: 8px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.2s ease;
+    z-index: 100;
+  }
+
+  .reset-btn:hover {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  /* TOC */
+  .toc {
+    margin-bottom: 56px;
+    padding: 24px 28px;
+    background: var(--paper-warm);
+    border: 1px solid var(--bone);
+    border-radius: 3px;
+  }
+
+  .toc h3 {
+    border: none;
+    margin-bottom: 14px;
+  }
+
+  .toc ol {
+    list-style: none;
+    counter-reset: toc;
+    padding: 0;
+  }
+
+  .toc li {
+    counter-increment: toc;
+    padding: 4px 0;
+    font-size: 15px;
+  }
+
+  .toc li::before {
+    content: counter(toc, decimal-leading-zero) " — ";
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--rust);
+    margin-right: 4px;
+  }
+
+  .toc a {
+    color: var(--ink);
+    text-decoration: none;
+    border-bottom: 1px dashed transparent;
+    transition: border-color 0.2s ease;
+  }
+
+  .toc a:hover {
+    border-bottom-color: var(--rust);
+    color: var(--rust);
+  }
+
+  .toc-aside {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--bone);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .toc-aside a {
+    color: var(--rust);
+    text-decoration: none;
+    border-bottom: 1px dashed var(--rust);
+  }
+
+  /* PT TIPS */
+  .pt-tips {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 32px 36px;
+    border-radius: 3px;
+    margin-top: 48px;
+  }
+
+  .pt-tips h3 {
+    color: var(--rust);
+    border: none;
+    margin-bottom: 16px;
+  }
+
+  .pt-tips ol {
+    padding-left: 20px;
+  }
+
+  .pt-tips li {
+    padding: 8px 0;
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--bone);
+  }
+
+  .pt-tips li::marker {
+    color: var(--rust);
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+  }
+
+  @media (max-width: 600px) {
+    .container { padding: 32px 20px 100px; }
+    .exercise {
+      grid-template-columns: auto 1fr;
+      grid-template-rows: auto auto;
+    }
+    .timer-btn {
+      grid-column: 2;
+      justify-self: start;
+      margin-top: 4px;
+    }
+    .meta-tag { gap: 16px; font-size: 10px; }
+    .reset-btn { bottom: 16px; left: 16px; }
+    .timer-display { bottom: 16px; right: 16px; }
+  }
+
+  ::selection {
+    background: var(--rust);
+    color: var(--paper);
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <header>
+    <div class="meta-tag">
+      <span>Lumbar Radiculopathy</span>
+      <span>Home Program</span>
+    </div>
+    <h1>Home <em>recovery</em><br>protocol.</h1>
+    <p class="subtitle">An evidence-informed home program for unilateral lumbar radiculopathy (L4-L5 / L5-S1 disc-related). Not medical advice — adapt with a clinician.</p>
+  </header>
+
+  <div class="progress-wrap">
+    <div class="progress-label">
+      <span>Today's progress</span>
+      <span id="progress-text">0 / 0</span>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    <strong>Read first.</strong> This is a starting framework, not a prescription. Have a physical therapist review it, watch you perform the exercises, and modify based on your specific presentation. Stop any exercise that increases leg pain, numbness, or tingling — that's a signal, not a challenge. Centralization (symptoms moving from leg back toward the spine) is a good sign; peripheralization (symptoms moving down the leg) is not.
+  </div>
+
+  <div class="toc">
+    <h3>Contents</h3>
+    <ol>
+      <li><a href="#daily">Daily routine — 10 to 15 minutes</a></li>
+      <li><a href="#strength">Strength block — 2 to 3× per week</a></li>
+      <li><a href="#nerve">Nerve glides for L5/S1</a></li>
+      <li><a href="#avoid">What to avoid</a></li>
+      <li><a href="#lifting">Lifting & carrying a young child</a></li>
+      <li><a href="#flare">Flare management</a></li>
+      <li><a href="#pt">Use remaining PT sessions for</a></li>
+      <li><a href="#emergency">Emergency signs</a></li>
+    </ol>
+    <p class="toc-aside"><a href="anatomy.html">Reference: lumbar anatomy & disc loading →</a></p>
+  </div>
+
+  <!-- SECTION 1: DAILY -->
+  <section id="daily">
+    <div class="section-header">
+      <span class="section-num">01</span>
+      <h2>Daily routine</h2>
+      <span class="section-meta">10–15 min · most days</span>
+    </div>
+    <p class="section-intro">The foundation. Do this even on good days — especially on good days. Consistency matters more than intensity.</p>
+
+    <div class="subsection">
+      <h3>Mobility — Morning</h3>
+      <div class="exercise" data-key="d1">
+        <div class="checkbox"></div>
+        <div class="ex-content">
+          <div class="ex-name">Prone press-ups</div>
+          <div class="ex-prescription">10 reps · 2-sec hold at top · cobra-style, elbows then hands</div>
+          <div class="ex-note">Stop if leg symptoms increase. Continue if symptoms centralize toward your spine.</div>
+        </div>
+        <button class="timer-btn" data-time="60">60s timer</button>
+      </div>
+      <div class="exercise" data-key="d2">
+        <div class="checkbox"></div>
+        <div class="ex-content">
+          <div class="ex-name">Cat-cow</div>
+          <div class="ex-prescription">10 reps · slow tempo</div>
+        </div>
+      </div>
+      <div class="exercise" data-key="d3">
+        <div class="checkbox"></div>
+        <div class="ex-content">
+          <div class="ex-name">Single knee to chest</div>
+          <div class="ex-prescription">5 reps each side · 5-sec hold</div>
+        </div>
+      </div>
+      <div class="exercise" data-key="d4">
+        <div class="checkbox"></div>
+        <div class="ex-content">
+          <div class="ex-name">Half-kneeling hip flexor stretch</div>
+          <div class="ex-prescription">30 sec each side · stay tall, tuck pelvis</div>
+        </div>
+        <button class="timer-btn" data-time="30">30s</button>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <h3>Core endurance — McGill big three</h3>
+      <div class="exercise" data-key="d5">
+        <div class="checkbox"></div>
+        <div class="ex-content">
+          <div class="ex-name">Modified curl-up</div>
+          <div class="ex-prescription">3 sets · 8-sec holds · descending reps 10/8/6</div>
+          <div class="ex-note">One knee bent, hands under low back. Lift head & shoulders only slightly.</div>
+        </div>
+        <button class="timer-btn" data-time="8">8s hold</button>
+      </div>
+      <div class="exercise" data-key="d6">
+        <div class="checkbox"></div>
+        <div class="ex-content">
+          <div class="ex-name">Side plank</div>
+          <div class="ex-prescription">3 holds each side · 10–20 sec · from knees → progress to feet</div>
+        </div>
+        <button class="timer-btn" data-time="20">20s</button>
+      </div>
+      <div class="exercise" data-key="d7">
+        <div class="checkbox"></div>
+        <div class="ex-content">
+          <div class="ex-name">Bird dog</div>
+          <div class="ex-prescription">3 sets · 8 reps each side · 8-sec hold</div>
+          <div class="ex-note">Keep hips square to floor — no rotation. Imagine balancing a glass on your low back.</div>
+        </div>
+        <button class="timer-btn" data-time="8">8s hold</button>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <h3>Glutes & posterior chain</h3>
+      <div class="exercise" data-key="d8">
+        <div class="checkbox"></div>
+        <div class="ex-content">
+          <div class="ex-name">Glute bridges</div>
+          <div class="ex-prescription">2 × 12 · 2-sec hold at top · squeeze glutes</div>
+        </div>
+      </div>
+      <div class="exercise" data-key="d9">
+        <div class="checkbox"></div>
+        <div class="ex-content">
+          <div class="ex-name">Clamshells (band) or side-lying abduction</div>
+          <div class="ex-prescription">2 × 15 each side</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 2: STRENGTH -->
+  <section id="strength">
+    <div class="section-header">
+      <span class="section-num">02</span>
+      <h2>Strength block</h2>
+      <span class="section-meta">20–30 min · 2–3× weekly</span>
+    </div>
+    <p class="section-intro">Add on top of the daily routine, or substitute for the core work some days. This builds the resilience your spine needs to handle real-life loading — including a 30-lb toddler.</p>
+
+    <div class="subsection">
+      <h3>Hip mobility</h3>
+      <div class="exercise" data-key="s1">
+        <div class="checkbox"></div>
+        <div class="ex-content">
+          <div class="ex-name">90/90 hip stretch</div>
+          <div class="ex-prescription">1 min each side</div>
+        </div>
+        <button class="timer-btn" data-time="60">60s</button>
+      </div>
+      <div class="exercise" data-key="s2">
+        <div class="checkbox"></div>
+        <div class="ex-content">
+          <div class="ex-name">Pigeon or figure-4 stretch</div>
+          <div class="ex-prescription">1 min each side</div>
+        </div>
+        <button class="timer-btn" data-time="60">60s</button>
+      </div>
+      <div class="exercise" data-key="s3">
+        <div class="checkbox"></div>
+        <div class="ex-content">
+          <div class="ex-name">Thoracic rotations</div>
+          <div class="ex-prescription">10 each side · quadruped or seated</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <h3>Strength progression</h3>
+      <div class="exercise" data-key="s4">
+        <div class="checkbox"></div>
+        <div class="ex-content">
+          <div class="ex-name">Goblet squat</div>
+          <div class="ex-prescription">3 × 8–10 · light DB or KB</div>
+          <div class="ex-note">Hip hinge dominant, neutral spine, knees track over toes.</div>
+        </div>
+      </div>
+      <div class="exercise" data-key="s5">
+        <div class="checkbox"></div>
+        <div class="ex-content">
+          <div class="ex-name">Romanian deadlift</div>
+          <div class="ex-prescription">3 × 8 · light load</div>
+          <div class="ex-note">Critical lift — this teaches the hip hinge that protects your spine when picking things up.</div>
+        </div>
+      </div>
+      <div class="exercise" data-key="s6">
+        <div class="checkbox"></div>
+        <div class="ex-content">
+          <div class="ex-name">Suitcase carry</div>
+          <div class="ex-prescription">30–60 sec each side · weight in one hand</div>
+          <div class="ex-note">Mimics asymmetric toddler-carrying. Resist the lean.</div>
+        </div>
+        <button class="timer-btn" data-time="45">45s</button>
+      </div>
+      <div class="exercise" data-key="s7">
+        <div class="checkbox"></div>
+        <div class="ex-content">
+          <div class="ex-name">Step-ups</div>
+          <div class="ex-prescription">2 × 8 each leg · controlled descent</div>
+        </div>
+      </div>
+      <div class="exercise" data-key="s8">
+        <div class="checkbox"></div>
+        <div class="ex-content">
+          <div class="ex-name">Wall sit</div>
+          <div class="ex-prescription">2–3 holds · 30–45 sec</div>
+        </div>
+        <button class="timer-btn" data-time="45">45s</button>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <h3>Cardio</h3>
+      <div class="exercise" data-key="s9">
+        <div class="checkbox"></div>
+        <div class="ex-content">
+          <div class="ex-name">Walking</div>
+          <div class="ex-prescription">20–30 min · most days</div>
+          <div class="ex-note">Excellent for disc health. If desk-bound, stand & move every 30–45 min.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 3: NERVE GLIDES -->
+  <section id="nerve">
+    <div class="section-header">
+      <span class="section-num">03</span>
+      <h2>Nerve glides</h2>
+      <span class="section-meta">For L5 / S1 numbness</span>
+    </div>
+    <p class="section-intro">A "floss" rather than a stretch. Useful for radicular leg/foot symptoms.</p>
+
+    <div class="exercise" data-key="n1">
+      <div class="checkbox"></div>
+      <div class="ex-content">
+        <div class="ex-name">Sciatic nerve slider — affected side</div>
+        <div class="ex-prescription">10 slow reps · 1–2× per day</div>
+        <div class="ex-note">Lying on back, knee bent toward chest. Slowly straighten knee while looking up; bend knee while tucking chin to chest. The two ends move together so the nerve glides without being pulled. <strong>Stop if it increases symptoms.</strong></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 4: AVOID -->
+  <section id="avoid">
+    <div class="section-header">
+      <span class="section-num">04</span>
+      <h2>What to avoid</h2>
+      <span class="section-meta">Risk reduction</span>
+    </div>
+    <div class="avoid-block">
+      <h4>Disc-unfriendly movements</h4>
+      <ul>
+        <li>Heavy spinal flexion under load — toe touches with weight, sit-ups, loaded forward bending.</li>
+        <li>Prolonged sitting, especially in soft chairs or slouched positions.</li>
+        <li>Twisting under load. Bending + twisting + load is the worst combination for disc bulges.</li>
+        <li>High-impact activities during flares — running, jumping, plyometrics.</li>
+        <li>Deep hamstring stretching while leg symptoms are active — can tension an already-irritated nerve.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- SECTION 5: LIFTING -->
+  <section id="lifting">
+    <div class="section-header">
+      <span class="section-num">05</span>
+      <h2>Lifting a young child</h2>
+      <span class="section-meta">Daily parental loading</span>
+    </div>
+    <p class="section-intro">How a parent or caregiver handles a young child every day probably matters more than the exercises. A 30-lb toddler held at arms' length loads the spine like 200+ lbs.</p>
+
+    <div class="scenario">
+      <h4>Picking them up off the floor</h4>
+      <p>Squat down — hinge at the <span class="key">hips and knees</span>, not the lower back. Chest stays up.</p>
+      <p>Bring the child <span class="key">close to your body</span> before standing. Distance from your spine multiplies load dramatically.</p>
+      <p>Brace your core (think: someone's about to poke your belly) before initiating the lift.</p>
+      <p>Drive up through your legs. Never lift from a twisted position — square up first.</p>
+    </div>
+
+    <div class="scenario">
+      <h4>Carrying</h4>
+      <p>Symmetric carrying (both arms, child centered) is easiest on your spine. Front carriers help.</p>
+      <p>If you hip-carry, <span class="key">alternate sides regularly</span>. Most parents have a dominant hip and load it asymmetrically for years. If your symptoms are unilateral, watch which side you favor — you may be loading the painful side without realizing it.</p>
+      <p>Hip carrying forces side-bending and weight-shifting onto one leg — exactly what irritates inflamed structures.</p>
+    </div>
+
+    <div class="scenario">
+      <h4>Car seat — major culprit for parents</h4>
+      <p>Loading a child into a rear-facing car seat is the perfect storm: <span class="key">forward bending + twisting + load</span>.</p>
+      <p>Get as close as possible. Climb partway into the back seat if you need to. Don't reach.</p>
+      <p>Brace your core, hinge at the hips, keep the child against your chest. <span class="key">Move your feet to turn instead of twisting your trunk.</span></p>
+    </div>
+
+    <div class="scenario">
+      <h4>Floor play</h4>
+      <p>Slumped sitting on the floor is a slow aggravator. Try side-sitting (legs to one side, alternate periodically), kneeling, or half-kneeling. A low stool also helps. Vary positions every few minutes.</p>
+    </div>
+
+    <div class="scenario">
+      <h4>Crib transfers</h4>
+      <p>Lowering a sleeping child into a crib = forward bend with load. Drop the rail if your crib has one. If not, this is one of the worst recurring movements in your day. Brace, hinge from hips, get as close as physically possible to the mattress.</p>
+    </div>
+  </section>
+
+  <!-- SECTION 6: FLARE -->
+  <section id="flare">
+    <div class="section-header">
+      <span class="section-num">06</span>
+      <h2>Flare management</h2>
+      <span class="section-meta">When things get worse</span>
+    </div>
+    <div class="flare-block">
+      <h4>When symptoms flare up</h4>
+      <ul>
+        <li>Don't go to bed rest. 1–2 days of relative rest at most, then gentle movement.</li>
+        <li>Walk frequently in short bouts — 5–10 min several times a day beats one long walk.</li>
+        <li>Pause loaded exercises (squats, deadlifts, carries) for several days. Keep doing daily mobility & gentle core work.</li>
+        <li>Ice for acute soreness, heat for muscle tightness. Either is fine — use what feels right.</li>
+        <li>Return to normal activity progressively over 5–10 days. Don't try to skip the ramp-up.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- SECTION 7: PT SESSIONS -->
+  <section id="pt">
+    <div class="section-header">
+      <span class="section-num">07</span>
+      <h2>Use PT sessions for</h2>
+      <span class="section-meta">Highest-value asks</span>
+    </div>
+    <div class="pt-tips">
+      <h3>What to prioritize</h3>
+      <ol>
+        <li>Form check on goblet squats and Romanian deadlifts — highest stakes for getting right.</li>
+        <li>Form check on the McGill big three (curl-up, side plank, bird dog).</li>
+        <li>Have them watch you simulate a child pick-up and a car-seat transfer.</li>
+        <li>Confirm whether prone press-ups are appropriate for your specific presentation (directional preference testing).</li>
+        <li>Ask about how to progress loads and volume over the next 3–6 months.</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- SECTION 8: EMERGENCY -->
+  <section id="emergency">
+    <div class="emergency">
+      <h3>Stop & seek emergency care if</h3>
+      <p><strong>Saddle anesthesia</strong> — numbness in the groin, inner thighs, or genitals. <strong>New bladder or bowel dysfunction</strong> — incontinence, retention, or loss of sensation. <strong>Rapidly progressing bilateral leg weakness</strong>. These can indicate cauda equina syndrome, which is rare but time-critical. ER, not "call the office."</p>
+      <br>
+      <p>Lower-urgency reasons to call your physician's office: fever, new significant leg weakness (foot drop, leg giving way), spreading numbness to new areas, or symptoms increasingly unresponsive to what used to help.</p>
+    </div>
+  </section>
+
+</div>
+
+<button class="reset-btn" id="reset-btn">Reset checks</button>
+
+<div class="timer-display" id="timer-display">
+  <div class="label" id="timer-label">Hold</div>
+  <div class="count" id="timer-count">0</div>
+  <button id="timer-cancel">Cancel</button>
+</div>
+
+<script>
+  // Persist completion state
+  const STORAGE_KEY = 'pt-plan-completion';
+  const state = {};
+
+  function loadState() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      Object.assign(state, saved);
+    } catch (e) {}
+  }
+
+  function saveState() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {}
+  }
+
+  function applyState() {
+    document.querySelectorAll('.exercise').forEach(ex => {
+      const key = ex.dataset.key;
+      if (state[key]) ex.classList.add('done');
+    });
+    updateProgress();
+  }
+
+  function updateProgress() {
+    const all = document.querySelectorAll('.exercise');
+    const done = document.querySelectorAll('.exercise.done');
+    const pct = all.length ? (done.length / all.length) * 100 : 0;
+    document.getElementById('progress-fill').style.width = pct + '%';
+    document.getElementById('progress-text').textContent = `${done.length} / ${all.length}`;
+  }
+
+  // Toggle exercises (click anywhere on card except timer button)
+  document.querySelectorAll('.exercise').forEach(ex => {
+    ex.addEventListener('click', (e) => {
+      if (e.target.classList.contains('timer-btn')) return;
+      const key = ex.dataset.key;
+      ex.classList.toggle('done');
+      state[key] = ex.classList.contains('done');
+      saveState();
+      updateProgress();
+    });
+  });
+
+  // Reset
+  document.getElementById('reset-btn').addEventListener('click', () => {
+    document.querySelectorAll('.exercise.done').forEach(ex => ex.classList.remove('done'));
+    Object.keys(state).forEach(k => delete state[k]);
+    saveState();
+    updateProgress();
+  });
+
+  // Timers
+  let activeTimer = null;
+  const timerDisplay = document.getElementById('timer-display');
+  const timerCount = document.getElementById('timer-count');
+  const timerLabel = document.getElementById('timer-label');
+
+  document.querySelectorAll('.timer-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const seconds = parseInt(btn.dataset.time);
+      const exerciseName = btn.parentElement.querySelector('.ex-name').textContent;
+      startTimer(seconds, exerciseName, btn);
+    });
+  });
+
+  function startTimer(seconds, label, btn) {
+    if (activeTimer) {
+      clearInterval(activeTimer.interval);
+      if (activeTimer.btn) activeTimer.btn.classList.remove('running');
+    }
+
+    let remaining = seconds;
+    timerLabel.textContent = label;
+    timerCount.textContent = remaining;
+    timerDisplay.classList.add('active');
+    btn.classList.add('running');
+
+    const interval = setInterval(() => {
+      remaining--;
+      timerCount.textContent = remaining;
+      if (remaining <= 0) {
+        endTimer();
+        // gentle audio cue
+        try {
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.frequency.value = 660;
+          gain.gain.setValueAtTime(0.15, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.5);
+        } catch(e) {}
+      }
+    }, 1000);
+
+    activeTimer = { interval, btn };
+  }
+
+  function endTimer() {
+    if (activeTimer) {
+      clearInterval(activeTimer.interval);
+      if (activeTimer.btn) activeTimer.btn.classList.remove('running');
+      activeTimer = null;
+    }
+    timerDisplay.classList.remove('active');
+  }
+
+  document.getElementById('timer-cancel').addEventListener('click', endTimer);
+
+  // Smooth anchor scroll
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      const target = document.querySelector(a.getAttribute('href'));
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
+  loadState();
+  applyState();
+</script>
+
+</body>
+</html>
