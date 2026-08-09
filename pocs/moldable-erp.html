@@ -1,0 +1,2239 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Moldable ERP — playable prototype</title>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body,h1,h2,h3,p,figure,ul{margin:0}
+:root{
+  --bg:#E8EDEF; --panel:#FDFEFE; --panel-2:#F1F5F7; --panel-3:#E4EBEE;
+  --line:#C6D4D9; --line-soft:#DFE7EA;
+  --text:#0E1D23; --text-2:#495D66; --text-3:#7B8D96;
+  --accent:#06798C; --accent-2:#0AA0B8; --accent-soft:rgba(6,121,140,.10); --accent-ink:#FFFFFF;
+  --warn:#A96A11; --crit:#B93B2D; --good:#2C7A50;
+  --warn-soft:rgba(169,106,17,.12); --crit-soft:rgba(185,59,45,.12); --good-soft:rgba(44,122,80,.12);
+  --shadow:0 1px 2px rgba(14,29,35,.06), 0 8px 24px -12px rgba(14,29,35,.18);
+  --shadow-lg:0 2px 6px rgba(14,29,35,.08), 0 24px 60px -20px rgba(14,29,35,.34);
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+/* Light is the default regardless of system preference — a demo should look the same
+   on every machine it's shown on. Dark is opt-in via the Theme button only. */
+:root{color-scheme:light}
+:root[data-theme="dark"]{color-scheme:dark}
+
+:root[data-theme="light"]{
+  --bg:#E8EDEF; --panel:#FDFEFE; --panel-2:#F1F5F7; --panel-3:#E4EBEE;
+  --line:#C6D4D9; --line-soft:#DFE7EA;
+  --text:#0E1D23; --text-2:#495D66; --text-3:#7B8D96;
+  --accent:#06798C; --accent-2:#0AA0B8; --accent-soft:rgba(6,121,140,.10); --accent-ink:#FFFFFF;
+  --warn:#A96A11; --crit:#B93B2D; --good:#2C7A50;
+  --warn-soft:rgba(169,106,17,.12); --crit-soft:rgba(185,59,45,.12); --good-soft:rgba(44,122,80,.12);
+  --shadow:0 1px 2px rgba(14,29,35,.06), 0 8px 24px -12px rgba(14,29,35,.18);
+  --shadow-lg:0 2px 6px rgba(14,29,35,.08), 0 24px 60px -20px rgba(14,29,35,.34);
+}
+:root[data-theme="dark"]{
+  --bg:#080F13; --panel:#101B21; --panel-2:#16242B; --panel-3:#1D2E36;
+  --line:#263A43; --line-soft:#1A2A31;
+  --text:#DEEAEE; --text-2:#95ABB4; --text-3:#637B85;
+  --accent:#2FC6DC; --accent-2:#5FE0F0; --accent-soft:rgba(47,198,220,.13); --accent-ink:#04161B;
+  --warn:#E0A83C; --crit:#F0776C; --good:#4CBE84;
+  --warn-soft:rgba(224,168,60,.14); --crit-soft:rgba(240,119,108,.14); --good-soft:rgba(76,190,132,.14);
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
+  --shadow-lg:0 2px 6px rgba(0,0,0,.5), 0 28px 70px -20px rgba(0,0,0,.85);
+}
+
+html,body{height:100%}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:var(--sans); font-size:15px; line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+  display:flex; flex-direction:column; overflow:hidden;
+}
+
+/* ---------- page strip above the app ---------- */
+.strip{
+  flex:none; display:flex; align-items:center; gap:14px; padding:9px 16px;
+  border-bottom:1px solid var(--line); background:var(--panel-2);
+}
+.strip-t{font-family:var(--mono); font-size:11.5px; letter-spacing:.05em; color:var(--text-2)}
+.strip-t b{color:var(--text); font-weight:600}
+.strip-sp{margin-left:auto; display:flex; gap:7px}
+.ghost{
+  font-family:var(--mono); font-size:11px; padding:5px 10px; border-radius:3px; cursor:pointer;
+  background:var(--panel); border:1px solid var(--line); color:var(--text-2);
+}
+.ghost:hover{border-color:var(--accent); color:var(--text)}
+.ghost:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+/* ---------- app shell ---------- */
+.shell{flex:1; display:flex; min-height:0; background:var(--panel)}
+.rail{
+  width:50px; flex:none; border-right:1px solid var(--line-soft); background:var(--panel-2);
+  display:flex; flex-direction:column; align-items:center; padding:13px 0; gap:13px;
+}
+.rail b{
+  width:26px; height:26px; border-radius:3px; background:var(--accent); color:var(--accent-ink);
+  font-family:var(--mono); font-size:10.5px; font-weight:600; display:grid; place-items:center;
+}
+.rail i{width:18px; height:2px; background:var(--line); border-radius:2px; display:block}
+.rail i.on{background:var(--accent); width:22px; height:3px}
+
+/* ---------- intent thread ---------- */
+.thread{
+  width:282px; flex:none; border-right:1px solid var(--line-soft); background:var(--panel-2);
+  display:flex; flex-direction:column; min-height:0; transition:width .18s ease;
+}
+.thread.collapsed{width:40px}
+.thread.collapsed .thread-body,.thread.collapsed .thread-head span:first-child,
+.thread.collapsed .thread-count{display:none}
+.thread-head{
+  flex:none; padding:11px 12px; border-bottom:1px solid var(--line-soft);
+  font-family:var(--mono); font-size:10px; letter-spacing:.11em; text-transform:uppercase; color:var(--text-3);
+  display:flex; justify-content:space-between; align-items:center; gap:8px;
+}
+.thread-count{font-variant-numeric:tabular-nums}
+.collapse{
+  background:none; border:none; color:var(--text-3); cursor:pointer; font-family:var(--mono);
+  font-size:13px; line-height:1; padding:2px 4px; border-radius:2px;
+}
+.collapse:hover{color:var(--accent); background:var(--panel-3)}
+.thread-body{flex:1; padding:11px; display:flex; flex-direction:column; gap:8px; overflow-y:auto}
+.tcard{
+  background:var(--panel); border:1px solid var(--line-soft); border-radius:3px; padding:9px 10px;
+  transition:border-color .15s, opacity .15s;
+}
+.tcard.live{border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-soft)}
+.tcard.off{opacity:.44}
+.tcard.off .tcard-q{text-decoration:line-through}
+.tcard.seed{border-style:dashed}
+.tcard-q{font-family:var(--mono); font-size:11.5px; line-height:1.42; margin:0 0 7px; word-break:break-word}
+.tcard-tgt{
+  display:inline-block; font-family:var(--mono); font-size:9.5px; letter-spacing:.04em;
+  padding:1px 5px; border-radius:2px; background:var(--accent-soft); color:var(--accent);
+  margin:0 0 6px; text-transform:uppercase;
+}
+.tcard-d{display:flex; flex-direction:column; gap:2px}
+.dline{font-family:var(--mono); font-size:10.5px; color:var(--text-2); display:flex; gap:6px; line-height:1.4}
+.dline b{font-weight:600; width:9px; flex:none; text-align:center}
+.dline.add b{color:var(--good)} .dline.mod b{color:var(--warn)} .dline.rm b{color:var(--crit)}
+.tcard-foot{display:flex; gap:10px; margin-top:7px}
+.tlink{
+  font-family:var(--mono); font-size:10px; color:var(--text-3); cursor:pointer;
+  text-decoration:underline; text-underline-offset:2px; background:none; border:none; padding:0;
+}
+.tlink:hover{color:var(--accent)}
+.thread-hint{font-family:var(--mono); font-size:11px; color:var(--text-3); line-height:1.5; margin:0}
+
+/* ---------- main column ---------- */
+.main{flex:1; min-width:0; display:flex; flex-direction:column; min-height:0}
+.topbar{
+  flex:none; display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:11px 16px; border-bottom:1px solid var(--line-soft); flex-wrap:wrap;
+}
+.ws-name{font-family:var(--mono); font-size:13.5px; font-weight:600; display:flex; align-items:center; gap:7px}
+.ws-name .caret{color:var(--text-3); font-weight:400}
+.ws-meta{font-family:var(--mono); font-size:11px; color:var(--text-3)}
+.btn{
+  font-family:var(--mono); font-size:11.5px; padding:5px 11px; border-radius:3px; cursor:pointer;
+  border:1px solid var(--line); background:var(--panel); color:var(--text-2);
+}
+.btn:hover{border-color:var(--accent); color:var(--text)}
+.btn.primary{background:var(--accent); border-color:var(--accent); color:var(--accent-ink)}
+.btn.primary:hover{background:var(--accent-2); border-color:var(--accent-2); color:var(--accent-ink)}
+.btn:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.btn[disabled]{opacity:.5; cursor:default}
+
+.canvas{
+  flex:1; min-height:0; overflow-y:auto; padding:16px;
+  display:flex; flex-direction:column; gap:12px;
+  background-image:radial-gradient(circle at 1px 1px, var(--line-soft) 1px, transparent 0);
+  background-size:22px 22px;
+}
+
+/* ---------- interpretation strip ---------- */
+.interp{
+  flex:none; display:flex; gap:6px; align-items:center; flex-wrap:wrap;
+  padding:10px 13px; background:var(--accent-soft); border:1px solid var(--accent); border-radius:3px;
+}
+.interp.miss{background:var(--crit-soft); border-color:var(--crit)}
+.interp-lbl{
+  font-family:var(--mono); font-size:10px; letter-spacing:.11em; text-transform:uppercase;
+  color:var(--accent); margin-right:2px;
+}
+.interp.miss .interp-lbl{color:var(--crit)}
+.chip{
+  font-family:var(--mono); font-size:11.5px; padding:3px 8px; border-radius:2px;
+  background:var(--panel); border:1px solid var(--line); color:var(--text-2); white-space:nowrap;
+  display:inline-flex; align-items:center; gap:5px;
+}
+.chip.changed{border-color:var(--accent); color:var(--text); font-weight:600; box-shadow:0 0 0 2px var(--accent-soft)}
+.chip .x{color:var(--text-3); cursor:pointer; font-size:12px; line-height:1}
+.chip .x:hover{color:var(--crit)}
+.interp-note{font-family:var(--mono); font-size:11px; color:var(--crit); margin-left:2px}
+.interp-fix{font-family:var(--mono); font-size:11px; color:var(--accent); margin-left:auto}
+
+/* ---------- blocks ---------- */
+.block{
+  flex:none; background:var(--panel); border:1px solid var(--line-soft); border-radius:3px;
+  position:relative; transition:border-color .15s, box-shadow .15s;
+}
+.block:hover{border-color:var(--line)}
+.block .grip{
+  position:absolute; top:-1px; left:-1px; bottom:-1px; width:3px; border-radius:3px 0 0 3px;
+  background:var(--accent); opacity:0; transition:opacity .15s;
+}
+.block:hover .grip{opacity:.45}
+.block.sel{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft)}
+.block.sel .grip{opacity:1}
+.block-head{
+  display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+  padding:9px 12px; border-bottom:1px solid var(--line-soft); flex-wrap:wrap; cursor:pointer;
+}
+.block-t{font-family:var(--mono); font-size:12.5px; font-weight:600}
+.block-sub{font-family:var(--mono); font-size:10.5px; color:var(--text-3); margin-top:2px}
+.block-ovr{
+  display:inline-flex; align-items:center; gap:5px; font-family:var(--mono); font-size:9.5px;
+  letter-spacing:.05em; text-transform:uppercase; padding:2px 6px; border-radius:2px;
+  background:var(--accent); color:var(--accent-ink); margin-left:7px; vertical-align:1px;
+}
+.block-ovr .x{cursor:pointer; opacity:.72; font-size:11px; line-height:1}
+.block-ovr .x:hover{opacity:1}
+.block-ask{
+  font-family:var(--mono); font-size:10px; padding:3px 8px; border-radius:3px;
+  background:var(--panel-3); border:1px solid var(--line); color:var(--text-2);
+  opacity:0; transition:opacity .15s; white-space:nowrap; flex:none;
+}
+.block:hover .block-ask,.block.sel .block-ask{opacity:1}
+.block.sel .block-ask{background:var(--accent); border-color:var(--accent); color:var(--accent-ink)}
+
+.legend{display:flex; gap:11px; align-items:center; flex-wrap:wrap}
+.lg{display:flex; gap:5px; align-items:center; font-family:var(--mono); font-size:10.5px; color:var(--text-2)}
+.lg span{width:10px; height:10px; border-radius:2px; display:block}
+.lg span.line{height:2px; width:14px; border-radius:0}
+.lg span.dash{height:0; width:14px; border-top:2px dashed var(--warn)}
+.chart-wrap{padding:11px 12px 5px}
+svg.chart{display:block; width:100%; height:auto}
+
+/* ---------- metrics ---------- */
+.metrics{display:grid; grid-template-columns:repeat(4,1fr); gap:9px; padding:11px 12px}
+@media(max-width:860px){ .metrics{grid-template-columns:repeat(2,1fr)} }
+.metric{background:var(--panel-2); border:1px solid var(--line-soft); border-radius:3px; padding:10px 12px}
+.metric-k{font-family:var(--mono); font-size:10px; letter-spacing:.09em; text-transform:uppercase; color:var(--text-3); display:block; margin-bottom:4px}
+.metric-v{font-family:var(--mono); font-size:20px; font-weight:600; font-variant-numeric:tabular-nums; line-height:1.1}
+.metric-v.crit{color:var(--crit)} .metric-v.warn{color:var(--warn)} .metric-v.good{color:var(--good)}
+.metric-s{font-family:var(--mono); font-size:10.5px; color:var(--text-3); margin-top:3px; display:block}
+
+/* ---------- table ---------- */
+.tbl-wrap{overflow-x:auto}
+table{width:100%; border-collapse:collapse; font-family:var(--mono); font-size:11.5px; min-width:640px}
+th{
+  text-align:left; font-weight:600; color:var(--text-3); text-transform:uppercase;
+  letter-spacing:.08em; font-size:10px; padding:8px 12px; border-bottom:1px solid var(--line-soft); white-space:nowrap;
+}
+td{padding:7px 12px; border-bottom:1px solid var(--line-soft); font-variant-numeric:tabular-nums; white-space:nowrap}
+tr:last-child td{border-bottom:none}
+td.num,th.num{text-align:right}
+td.neg{color:var(--crit); font-weight:600}
+.tag{font-size:9.5px; letter-spacing:.06em; text-transform:uppercase; padding:2px 6px; border-radius:2px}
+.tag.crit{background:var(--crit-soft); color:var(--crit)}
+.tag.warn{background:var(--warn-soft); color:var(--warn)}
+.tag.good{background:var(--good-soft); color:var(--good)}
+.empty-rows{font-family:var(--mono); font-size:11.5px; color:var(--text-3); padding:18px 12px; text-align:center}
+
+/* ---------- note / alert blocks ---------- */
+.note-body{padding:11px 12px; font-family:var(--mono); font-size:11.5px; color:var(--text-2); line-height:1.5}
+.alert-row{
+  display:flex; gap:9px; align-items:baseline; padding:9px 12px;
+  border-bottom:1px solid var(--line-soft); font-family:var(--mono); font-size:11.5px;
+}
+.alert-row:last-child{border-bottom:none}
+.alert-row .when{color:var(--text-3); font-size:10.5px; margin-left:auto; white-space:nowrap}
+
+/* ---------- command bar ---------- */
+.cmd{
+  flex:none; border-top:1px solid var(--line); background:var(--panel-2);
+  padding:10px 16px 12px; display:flex; flex-direction:column; gap:8px;
+}
+.cmd-sugg{display:flex; gap:6px; flex-wrap:wrap; align-items:center}
+.sugg{
+  font-family:var(--mono); font-size:10.5px; padding:4px 9px; border-radius:3px; cursor:pointer;
+  border:1px dashed var(--line); background:var(--panel); color:var(--text-2);
+}
+.sugg:hover{border-style:solid; border-color:var(--accent); color:var(--text)}
+.sugg:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.cmd-box{
+  display:flex; align-items:center; gap:9px; background:var(--panel);
+  border:1px solid var(--line); border-radius:3px; padding:8px 11px;
+  transition:border-color .15s, box-shadow .15s;
+}
+.cmd-box:focus-within{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft)}
+.cmd-box.targeted{border-color:var(--accent)}
+.cmd-tgt{
+  font-family:var(--mono); font-size:10.5px; padding:3px 8px; border-radius:2px; white-space:nowrap;
+  background:var(--panel-3); border:1px solid var(--line); color:var(--text-3); flex:none;
+  display:inline-flex; align-items:center; gap:5px;
+}
+.cmd-box.targeted .cmd-tgt{background:var(--accent); border-color:var(--accent); color:var(--accent-ink)}
+.cmd-tgt .x{cursor:pointer; opacity:.75; font-size:12px; line-height:1}
+.cmd-tgt .x:hover{opacity:1}
+.cmd-input{
+  flex:1; min-width:0; border:none; background:none; outline:none; color:var(--text);
+  font-family:var(--mono); font-size:13px;
+}
+.cmd-input::placeholder{color:var(--text-3)}
+.cmd-kbd{font-family:var(--mono); font-size:10px; color:var(--text-3); border:1px solid var(--line); border-radius:2px; padding:2px 5px; flex:none}
+
+/* ---------- modal ---------- */
+.scrim{
+  position:fixed; inset:0; background:rgba(8,15,19,.52); z-index:80;
+  display:grid; place-items:center; padding:20px;
+}
+.scrim[hidden]{display:none}
+.modal{
+  background:var(--panel); border:1px solid var(--line); border-radius:5px; box-shadow:var(--shadow-lg);
+  max-width:520px; width:100%; max-height:88vh; overflow-y:auto;
+}
+.modal-head{padding:15px 18px 0}
+.modal-h{font-family:var(--mono); font-size:15px; font-weight:600; margin:0 0 6px}
+.modal-p{font-size:13.5px; color:var(--text-2); margin:0}
+.modal-body{padding:15px 18px}
+.modal-foot{display:flex; gap:8px; justify-content:flex-end; padding:0 18px 16px}
+.resolve{
+  display:flex; gap:10px; align-items:flex-start; padding:11px 12px; border-radius:3px;
+  background:var(--warn-soft); border:1px solid var(--warn); margin-bottom:12px;
+}
+.resolve-k{font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--warn); flex:none; padding-top:2px}
+.resolve p{font-family:var(--mono); font-size:11.5px; color:var(--text-2); margin:0; line-height:1.5}
+.resolve p b{color:var(--text)}
+.field{display:flex; flex-direction:column; gap:5px; margin-bottom:12px}
+.field label{font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-3)}
+.field input,.field select{
+  font-family:var(--mono); font-size:12.5px; padding:7px 10px; border-radius:3px;
+  border:1px solid var(--line); background:var(--panel-2); color:var(--text);
+}
+.field input:focus,.field select:focus{outline:2px solid var(--accent); outline-offset:-1px}
+
+/* ---------- about panel ---------- */
+.about{padding:4px 18px 16px}
+.about h4{font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--accent); margin:14px 0 6px}
+.about p,.about li{font-size:13.5px; color:var(--text-2); line-height:1.55; margin:0 0 7px}
+.about ul{padding-left:17px}
+.about code{font-family:var(--mono); font-size:12px; background:var(--panel-3); padding:1px 5px; border-radius:2px; color:var(--text)}
+.about strong{color:var(--text); font-weight:600}
+
+/* ---------- change banner: what just happened ---------- */
+.change{
+  flex:none; border:1px solid var(--accent); border-radius:3px; background:var(--panel);
+  box-shadow:0 0 0 3px var(--accent-soft); overflow:hidden;
+  animation:changeIn .32s cubic-bezier(.2,.8,.3,1);
+}
+@keyframes changeIn{ from{opacity:0; transform:translateY(-7px)} to{opacity:1; transform:none} }
+.change-head{
+  display:flex; align-items:center; gap:9px; padding:8px 12px; background:var(--accent);
+  color:var(--accent-ink); font-family:var(--mono); font-size:10.5px;
+  letter-spacing:.1em; text-transform:uppercase;
+}
+.change-head .said{
+  text-transform:none; letter-spacing:0; font-size:11.5px; opacity:.92;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.change-head .scope{margin-left:auto; opacity:.85; white-space:nowrap}
+.change-body{display:flex; gap:0; flex-wrap:wrap}
+.change-col{flex:1 1 200px; padding:9px 12px; border-right:1px solid var(--line-soft); min-width:0}
+.change-col:last-child{border-right:none}
+.change-k{
+  font-family:var(--mono); font-size:9.5px; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--text-3); display:block; margin-bottom:5px;
+}
+.change-line{font-family:var(--mono); font-size:11px; color:var(--text-2); display:flex; gap:6px; line-height:1.45}
+.change-line b{font-weight:600; width:9px; flex:none; text-align:center}
+.change-line.add b{color:var(--good)} .change-line.mod b{color:var(--warn)} .change-line.rm b{color:var(--crit)}
+.delta{display:flex; align-items:baseline; gap:7px; font-family:var(--mono); font-size:11.5px; margin-bottom:3px}
+.delta .lbl{color:var(--text-3); flex:1; min-width:0}
+.delta .was{color:var(--text-3); text-decoration:line-through}
+.delta .arw{color:var(--text-3)}
+.delta .now{font-weight:600; font-variant-numeric:tabular-nums}
+.delta .now.up{color:var(--good)} .delta .now.down{color:var(--crit)}
+
+/* changed chips pulse so the eye lands on the restatement, not the chart */
+.chip.changed{animation:chipPulse 1.5s ease-out 1}
+@keyframes chipPulse{
+  0%{box-shadow:0 0 0 2px var(--accent-soft)}
+  22%{box-shadow:0 0 0 7px var(--accent-soft); transform:translateY(-1px)}
+  100%{box-shadow:0 0 0 2px var(--accent-soft)}
+}
+
+/* a block the last turn actually touched */
+.block.flash{animation:flash 1.5s cubic-bezier(.2,.8,.3,1)}
+@keyframes flash{
+  0%{box-shadow:0 0 0 0 var(--accent); border-color:var(--accent)}
+  18%{box-shadow:0 0 0 5px var(--accent-soft); border-color:var(--accent)}
+  100%{box-shadow:0 0 0 0 transparent}
+}
+/* a block the last turn deliberately did NOT touch */
+.block.untouched::after{
+  content:"unchanged"; position:absolute; top:9px; right:11px; z-index:4;
+  font-family:var(--mono); font-size:9.5px; letter-spacing:.06em; text-transform:uppercase;
+  padding:2px 7px; border-radius:2px; background:var(--panel-3); color:var(--text-3);
+  animation:fadeOut 2.6s ease-out forwards;
+}
+@keyframes fadeOut{ 0%,60%{opacity:1} 100%{opacity:0} }
+
+/* ---------- guided tour ---------- */
+.tour-btn{background:var(--accent); border-color:var(--accent); color:var(--accent-ink)}
+.tour-btn:hover{background:var(--accent-2); border-color:var(--accent-2); color:var(--accent-ink)}
+.narrate{
+  position:fixed; left:50%; bottom:104px; transform:translateX(-50%);
+  width:min(680px, calc(100vw - 40px)); z-index:85;   /* above the modal scrim (80) */
+  background:var(--panel); border:1px solid var(--accent); border-radius:4px;
+  box-shadow:var(--shadow-lg); padding:13px 16px;
+  opacity:0; pointer-events:none; transition:opacity .25s, transform .25s;
+}
+.narrate.on{opacity:1; transform:translateX(-50%) translateY(0)}
+.narrate-top{display:flex; align-items:center; gap:9px; margin-bottom:5px}
+.narrate-step{
+  font-family:var(--mono); font-size:9.5px; letter-spacing:.1em; text-transform:uppercase;
+  background:var(--accent); color:var(--accent-ink); padding:2px 7px; border-radius:2px;
+}
+.narrate-h{font-family:var(--mono); font-size:12.5px; font-weight:600}
+.narrate-p{font-size:13.5px; color:var(--text-2); line-height:1.5; margin:0}
+.narrate-p b{color:var(--text); font-weight:600}
+.narrate-bar{height:2px; background:var(--line-soft); border-radius:2px; margin-top:10px; overflow:hidden}
+.narrate-bar i{display:block; height:100%; background:var(--accent); transition:width .3s}
+
+/* pointer the viewer can follow */
+.ghost-cursor{
+  position:fixed; width:16px; height:16px; z-index:90; pointer-events:none;
+  left:0; top:0; opacity:0; transition:transform .55s cubic-bezier(.3,.7,.3,1), opacity .2s;
+}
+.ghost-cursor::before{
+  content:""; position:absolute; inset:0; border-radius:50%;
+  background:var(--accent); box-shadow:0 0 0 4px var(--accent-soft), var(--shadow);
+}
+.ghost-cursor.on{opacity:1}
+.ghost-cursor.tap::after{
+  content:""; position:absolute; left:50%; top:50%; width:14px; height:14px; margin:-7px 0 0 -7px;
+  border-radius:50%; border:2px solid var(--accent); animation:tap .45s ease-out;
+}
+@keyframes tap{ from{transform:scale(.6); opacity:1} to{transform:scale(3.2); opacity:0} }
+
+/* whatever the tour is pointing at */
+.spot{position:relative; z-index:60; box-shadow:0 0 0 3px var(--accent), 0 0 0 9px var(--accent-soft) !important; border-radius:3px}
+
+/* ---------- toast ---------- */
+.toast{
+  position:fixed; bottom:96px; left:50%; transform:translateX(-50%);
+  background:var(--panel); border:1px solid var(--accent); border-radius:3px; box-shadow:var(--shadow-lg);
+  padding:9px 14px; font-family:var(--mono); font-size:11.5px; color:var(--text); z-index:70;
+  opacity:0; pointer-events:none; transition:opacity .2s;
+}
+.toast.on{opacity:1}
+
+@media (prefers-reduced-motion:reduce){ *{animation:none !important; transition:none !important} }
+@media(max-width:820px){
+  .thread{position:absolute; left:50px; top:0; bottom:0; z-index:20; box-shadow:var(--shadow-lg)}
+  .thread.collapsed{width:40px; box-shadow:none}
+}
+</style>
+</head>
+<body>
+
+<div class="strip">
+  <span class="strip-t"><b>Moldable ERP</b> — playable prototype · purchasing</span>
+  <span class="strip-sp">
+    <button class="ghost tour-btn" id="playBtn" type="button">▶ Play the demo</button>
+    <button class="ghost" id="nextBtn" type="button" hidden>Skip step ⏭</button>
+    <button class="ghost" id="aboutBtn" type="button">What's real here?</button>
+    <button class="ghost" id="resetBtn" type="button">Reset</button>
+    <button class="ghost" id="themeBtn" type="button">Theme</button>
+  </span>
+</div>
+
+<div class="ghost-cursor" id="ghostCursor" aria-hidden="true"></div>
+
+<div class="narrate" id="narrate" role="status" aria-live="polite">
+  <div class="narrate-top">
+    <span class="narrate-step" id="narrateStep">1 / 7</span>
+    <span class="narrate-h" id="narrateH"></span>
+  </div>
+  <p class="narrate-p" id="narrateP"></p>
+  <div class="narrate-bar"><i id="narrateBar" style="width:0%"></i></div>
+</div>
+
+<div class="shell">
+  <nav class="rail" aria-label="Modules">
+    <b>PM</b><i class="on"></i><i></i><i></i><i></i>
+  </nav>
+
+  <aside class="thread" id="thread">
+    <div class="thread-head">
+      <span>Intent</span>
+      <span class="thread-count" id="turnCount">seeded</span>
+      <button class="collapse" id="collapseBtn" type="button" title="Collapse intent thread" aria-label="Collapse intent thread">‹</button>
+    </div>
+    <div class="thread-body" id="threadBody"></div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="ws-name" id="wsName">Untitled workspace <span class="caret">▾</span></div>
+      <div style="display:flex; gap:8px; align-items:center">
+        <span class="ws-meta" id="wsMeta">draft</span>
+        <button class="btn primary" id="keepBtn" type="button">Keep</button>
+      </div>
+    </div>
+
+    <div class="canvas" id="canvas"></div>
+
+    <div class="cmd">
+      <div class="cmd-sugg" id="sugg"></div>
+      <div class="cmd-box" id="cmdBox">
+        <span class="cmd-tgt" id="cmdTgt">◇ Canvas</span>
+        <input class="cmd-input" id="cmdInput" type="text" autocomplete="off" spellcheck="false"
+               placeholder="Describe a change — try &ldquo;just chicago&rdquo;" aria-label="Describe a change">
+        <span class="cmd-kbd">⏎</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<div class="scrim" id="keepScrim" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="keepH">
+    <div class="modal-head">
+      <p class="modal-h" id="keepH">Keep this workspace</p>
+      <p class="modal-p">Exploring is loose. A kept workspace runs on a schedule, so anything relative has to resolve to something that still means the same thing next month.</p>
+    </div>
+    <div class="modal-body" id="keepBody"></div>
+    <div class="modal-foot">
+      <button class="btn" id="keepCancel" type="button">Cancel</button>
+      <button class="btn primary" id="keepConfirm" type="button">Keep it</button>
+    </div>
+  </div>
+</div>
+
+<div class="scrim" id="aboutScrim" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="aboutH">
+    <div class="modal-head">
+      <p class="modal-h" id="aboutH">What's real here, and what isn't</p>
+    </div>
+    <div class="about">
+      <h4>Real</h4>
+      <ul>
+        <li>The <strong>workspace spec</strong> is a real data structure. Every turn is a list of typed operations applied to it, and the canvas is a pure render of the result.</li>
+        <li><strong>Selective revert</strong> is real. Turning a turn off replays the remaining ops from the seed — it isn't an undo stack, so you can disable turn 2 and keep turn 3.</li>
+        <li>The <strong>numbers are computed</strong>, not fixtures. A synthetic catalogue of 18 SKUs across 6 DCs is projected forward daily and re-aggregated whenever scope, window or grain changes.</li>
+        <li><strong>Block-level targeting</strong> is real. Scoping a selected block writes an override on that block only, which is why the chart and table can disagree.</li>
+      </ul>
+      <h4>Faked</h4>
+      <ul>
+        <li>The <strong>language understanding</strong>. This is a pattern matcher over a fixed vocabulary, not a model. It handles a few hundred plausible phrasings and says so when it misses. A real system would use an LLM here, and that mapping is the actual technical risk this prototype cannot test.</li>
+        <li>Nothing persists — reload and you're back to the seed.</li>
+      </ul>
+      <h4>What to watch in a session</h4>
+      <ul>
+        <li>Does the <strong>second turn</strong> land? Refining beats re-describing, or the premise is dead.</li>
+        <li>Does anyone <strong>read the interpretation strip</strong> before believing the chart?</li>
+        <li>Does anyone select a block <em>on purpose</em>, or do they only ever talk to the whole canvas?</li>
+        <li>At <strong>Keep</strong>, does anyone notice the relative window has to be resolved?</li>
+      </ul>
+    </div>
+    <div class="modal-foot">
+      <button class="btn primary" id="aboutClose" type="button">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   0 · utilities
+   ============================================================ */
+
+function esc(s){
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+function el(id){ return document.getElementById(id); }
+function commas(n){ return Math.round(n).toLocaleString("en-US"); }
+
+// deterministic PRNG so the catalogue is stable across reloads
+function rng(seed){
+  return function(){
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+var DAY = 86400000;
+function addDays(d, n){ return new Date(d.getTime() + n * DAY); }
+function addMonths(d, n){ var x = new Date(d.getTime()); x.setMonth(x.getMonth() + n); return x; }
+function startOfWeek(d){ var x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); var w = (x.getDay() + 6) % 7; return addDays(x, -w); }
+function startOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
+function dayIndex(a, b){ return Math.round((b - a) / DAY); }
+var MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function fmtDay(d){ return MON[d.getMonth()] + " " + d.getDate(); }
+function fmtFull(d){ return d.getDate() + " " + MON[d.getMonth()] + " " + d.getFullYear(); }
+
+/* ============================================================
+   1 · synthetic warehouse data
+   ============================================================ */
+
+var TODAY = new Date(2026, 7, 8);           // 8 Aug 2026 — matches the scenario
+var HORIZON = 400;                           // days of projection available
+
+// `stress` lifts demand. `short`/`tight` are the share of SKU-sites whose standing
+// replenishment under-covers demand badly or mildly — trouble concentrates in specific
+// SKUs rather than spreading evenly, which is what makes narrowing to a DC worth doing.
+// Chicago is the DC the scenario narrows to, so it carries most of it.
+var DCS = [
+  { id:"chicago", name:"Chicago",  stress:1.10, short:0.32, tight:0.14 },
+  { id:"atlanta", name:"Atlanta",  stress:0.88, short:0.03, tight:0.08 },
+  { id:"dallas",  name:"Dallas",   stress:0.94, short:0.05, tight:0.11 },
+  { id:"newark",  name:"Newark",   stress:1.06, short:0.10, tight:0.15 },
+  { id:"fresno",  name:"Fresno",   stress:0.90, short:0.03, tight:0.09 },
+  { id:"memphis", name:"Memphis",  stress:0.98, short:0.06, tight:0.14 }
+];
+var DC_BY_ID = {}; DCS.forEach(function(d){ DC_BY_ID[d.id] = d; });
+
+var CATS = [
+  { id:"bearings",  name:"Bearings" },
+  { id:"hydraulics",name:"Hydraulics" },
+  { id:"drives",    name:"Drives" },
+  { id:"seals",     name:"Seals" },
+  { id:"belts",     name:"Belts" },
+  { id:"fasteners", name:"Fasteners" }
+];
+var CAT_BY_ID = {}; CATS.forEach(function(c){ CAT_BY_ID[c.id] = c; });
+
+var CATALOG = [
+  { id:"SKU-2319", desc:"Drive Belt B-88",        cat:"belts",      base:4200,  lead:21, supplier:"Vantex Industrial" },
+  { id:"SKU-8802", desc:"Bearing Assy 60 mm",     cat:"bearings",   base:9200,  lead:34, supplier:"Koyanagi Bearing" },
+  { id:"SKU-4471", desc:"Hydraulic Coupler ½″",   cat:"hydraulics", base:1400,  lead:45, supplier:"Delta Fluid Systems" },
+  { id:"SKU-6634", desc:"Servo Drive 3 kW",       cat:"drives",     base:220,   lead:63, supplier:"Rheinkraft GmbH" },
+  { id:"SKU-1067", desc:"Gasket Kit R4",          cat:"seals",      base:3400,  lead:18, supplier:"Sealcore Ltd" },
+  { id:"SKU-5520", desc:"Roller Bearing 80 mm",   cat:"bearings",   base:5100,  lead:38, supplier:"Koyanagi Bearing" },
+  { id:"SKU-3308", desc:"Hydraulic Hose 2 m",     cat:"hydraulics", base:2600,  lead:26, supplier:"Delta Fluid Systems" },
+  { id:"SKU-7712", desc:"V-Belt A-42",            cat:"belts",      base:6800,  lead:14, supplier:"Vantex Industrial" },
+  { id:"SKU-9041", desc:"Gearbox Input Shaft",    cat:"drives",     base:410,   lead:57, supplier:"Rheinkraft GmbH" },
+  { id:"SKU-2255", desc:"O-Ring Set N70",         cat:"seals",      base:12400, lead:12, supplier:"Sealcore Ltd" },
+  { id:"SKU-6180", desc:"Hex Bolt M12 ×60",       cat:"fasteners",  base:28000, lead:9,  supplier:"Northbolt Supply" },
+  { id:"SKU-4903", desc:"Thrust Washer 45 mm",    cat:"bearings",   base:7300,  lead:29, supplier:"Koyanagi Bearing" },
+  { id:"SKU-1176", desc:"Solenoid Valve 24 V",    cat:"hydraulics", base:880,   lead:41, supplier:"Delta Fluid Systems" },
+  { id:"SKU-8367", desc:"Timing Belt HTD-8M",     cat:"belts",      base:3100,  lead:23, supplier:"Vantex Industrial" },
+  { id:"SKU-5044", desc:"VFD Control Board",      cat:"drives",     base:160,   lead:71, supplier:"Rheinkraft GmbH" },
+  { id:"SKU-7729", desc:"Shaft Seal 35 ×52",      cat:"seals",      base:5600,  lead:16, supplier:"Sealcore Ltd" },
+  { id:"SKU-3491", desc:"Lock Nut M16",           cat:"fasteners",  base:19500, lead:11, supplier:"Northbolt Supply" },
+  { id:"SKU-9958", desc:"Coupling Insert L-095",  cat:"drives",     base:2400,  lead:33, supplier:"Rheinkraft GmbH" }
+];
+
+// A placement is one SKU held at one DC — the grain everything is computed at.
+var PLACEMENTS = (function(){
+  var out = [], r = rng(20260808), poSeq = 48200;
+  CATALOG.forEach(function(sku, si){
+    // each SKU lives at 3–5 DCs
+    var n = 3 + Math.floor(r() * 3);
+    var pool = DCS.slice();
+    for (var k = pool.length - 1; k > 0; k--){ var j = Math.floor(r() * (k + 1)); var t = pool[k]; pool[k] = pool[j]; pool[j] = t; }
+    // Chicago is always stocked — it's the DC the scenario narrows to
+    if (pool.slice(0, n).every(function(d){ return d.id !== "chicago"; })) pool[n - 1] = DC_BY_ID.chicago;
+
+    pool.slice(0, n).forEach(function(dc){
+      // Which tier this SKU-site lands in decides both its buffer and whether its
+      // standing replenishment keeps pace. Healthy sites hold flat; short ones bleed out.
+      var roll = r(), share, ratio;
+      if (roll < dc.short)            { share = 0.30 + r() * 0.20; ratio = 0.20 + r() * 0.30; }
+      else if (roll < dc.short + dc.tight) { share = 0.50 + r() * 0.22; ratio = 0.55 + r() * 0.23; }
+      // healthy sites hold roughly flat — they must not grow, or a scope with enough of
+      // them shows stock *rising* while the risk metrics say the opposite
+      else                            { share = 0.75 + r() * 0.50; ratio = 0.97 + r() * 0.06; }
+
+      var onHand = Math.round(sku.base * share);
+      // daily committed demand, pushed up at stressed DCs
+      var daily  = (sku.base / (52 + r() * 26)) * dc.stress * (0.8 + r() * 0.5);
+      var safety = Math.round(daily * (13 + r() * 8));
+
+      // Standing replenishment on a lead-time-driven cycle. These receipts ARE the open
+      // purchase orders — nothing arrives that isn't on the PO book, so the chart can't
+      // drift upward on inbound the demand side never accounted for.
+      var cycle = sku.lead > 45 ? 28 : sku.lead > 24 ? 21 : 14;
+      var qty   = Math.round(daily * cycle * ratio);
+      var pos   = [];
+
+      // An overdue receipt that still hasn't landed — often the reason a site is short.
+      if (r() < 0.08 + (1 - ratio) * 0.45)
+        pos.push({ ref:"PO-" + (poSeq++), due: -(2 + Math.floor(r() * 12)), qty:qty, late:true });
+
+      for (var t = 3 + Math.floor(r() * cycle); t < HORIZON; t += cycle)
+        pos.push({ ref:"PO-" + (poSeq++), due:t, qty:qty, late:false });
+
+      out.push({
+        sku: sku.id, desc: sku.desc, cat: sku.cat, dc: dc.id, dcName: dc.name,
+        supplier: sku.supplier, lead: sku.lead,
+        onHand: onHand, daily: daily, safety: safety, pos: pos,
+        // lead-time drift in days vs. contracted, for the supplier block
+        drift: Math.round((r() * 2 - 0.55) * 9)
+      });
+    });
+  });
+  return out;
+})();
+
+// Weekday shaping — DCs ship far less at weekends. Weights sum to 7 over a week.
+function dowFactor(d){ var g = d.getDay(); return g === 0 ? 0.05 : g === 6 ? 0.25 : 1.34; }
+
+// Project one placement forward from TODAY: on-hand at end of each day, plus that day's committed shipments.
+// Results are memoised per horizon length — the same projection feeds every block on the canvas.
+function project(p, days){
+  if (p._cache && p._cache.days >= days) return p._cache;
+
+  var onHand = new Float64Array(days), ship = new Float64Array(days), h = p.onHand;
+  var inbound = new Float64Array(days);
+  // Overdue receipts (due < 0) never landed, so they contribute nothing — by design.
+  p.pos.forEach(function(po){ if (po.due >= 0 && po.due < days) inbound[po.due] += po.qty; });
+
+  for (var i = 0; i < days; i++){
+    var out = p.daily * dowFactor(addDays(TODAY, i));
+    h = Math.max(0, h - out + inbound[i]);
+    onHand[i] = h; ship[i] = out;
+  }
+  p._cache = { days: days, onHand: onHand, ship: ship };
+  return p._cache;
+}
+
+/* ============================================================
+   2 · workspace spec
+   ============================================================ */
+
+function emptyScope(){ return { dcs:null, cats:null, status:null }; }
+
+function seedSpec(){
+  return {
+    name: null,
+    scope: emptyScope(),
+    window: { kind:"relative", n:2, unit:"month" },
+    grain: "week",
+    safety: true,
+    sort: { field:"net", dir:"asc" },
+    limit: 8,
+    schedule: null,
+    blocks: [
+      { id:"b-metrics", type:"metrics", title:"Position at a glance", scope:emptyScope(), grain:null },
+      { id:"b-chart",   type:"chart",   title:"Stock coverage vs. committed shipments", scope:emptyScope(), grain:null },
+      { id:"b-table",   type:"table",   title:"SKUs by projected coverage", scope:emptyScope(), grain:null }
+    ]
+  };
+}
+
+// A block's effective view: its own overrides win over the canvas.
+function effective(spec, block){
+  var s = block && block.scope ? block.scope : emptyScope();
+  return {
+    scope: {
+      dcs:    s.dcs    !== null ? s.dcs    : spec.scope.dcs,
+      cats:   s.cats   !== null ? s.cats   : spec.scope.cats,
+      status: s.status !== null ? s.status : spec.scope.status
+    },
+    grain:  (block && block.grain)  || spec.grain,
+    window: (block && block.window) || spec.window,
+    safety: block && block.safety !== undefined && block.safety !== null ? block.safety : spec.safety,
+    sort:   (block && block.sort)   || spec.sort,
+    limit:  (block && block.limit)  || spec.limit
+  };
+}
+function hasOverride(block){
+  if (!block.scope) return false;
+  return block.scope.dcs !== null || block.scope.cats !== null || block.scope.status !== null ||
+         !!block.grain || !!block.window || !!block.sort || !!block.limit ||
+         (block.safety !== undefined && block.safety !== null);
+}
+
+/* ---------- window resolution ---------- */
+function resolveWindow(w){
+  if (w.kind === "absolute") return { start:new Date(w.start), end:new Date(w.end) };
+  var start = new Date(TODAY.getTime()), end;
+  if (w.unit === "day")     end = addDays(start, w.n);
+  else if (w.unit === "week")  end = addDays(start, w.n * 7);
+  else if (w.unit === "quarter") end = addMonths(start, w.n * 3);
+  else end = addMonths(start, w.n);
+  return { start:start, end:end };
+}
+function windowLabel(w){
+  if (w.kind === "absolute") return fmtDay(new Date(w.start)) + " – " + fmtFull(new Date(w.end));
+  if (w.rolling) return "rolling " + w.n + " " + w.unit + (w.n === 1 ? "" : "s");
+  return "next " + w.n + " " + w.unit + (w.n === 1 ? "" : "s");
+}
+
+/* ---------- buckets ---------- */
+function buckets(win, grain){
+  var r = resolveWindow(win), out = [], cur;
+  if (grain === "day"){
+    cur = new Date(r.start.getFullYear(), r.start.getMonth(), r.start.getDate());
+    while (cur < r.end){ out.push({ start:new Date(cur.getTime()), end:addDays(cur, 1), label:fmtDay(cur) }); cur = addDays(cur, 1); }
+  } else if (grain === "month"){
+    cur = startOfMonth(r.start);
+    while (cur < r.end){ var nx = addMonths(cur, 1); out.push({ start:new Date(cur.getTime()), end:nx, label:MON[cur.getMonth()] }); cur = nx; }
+  } else {
+    cur = startOfWeek(r.start);
+    while (cur < r.end){ var nw = addDays(cur, 7); out.push({ start:new Date(cur.getTime()), end:nw, label:fmtDay(cur) }); cur = nw; }
+  }
+  return out.length ? out : [{ start:r.start, end:r.end, label:fmtDay(r.start) }];
+}
+
+/* ============================================================
+   3 · query engine — spec in, numbers out
+   ============================================================ */
+
+function matchScope(p, scope, series){
+  if (scope.dcs && scope.dcs.indexOf(p.dc) === -1) return false;
+  if (scope.cats && scope.cats.indexOf(p.cat) === -1) return false;
+  if (scope.status && series && scope.status.indexOf(series.status) === -1) return false;
+  return true;
+}
+
+function compute(spec, block){
+  var ev = effective(spec, block);
+  var bk = buckets(ev.window, ev.grain);
+  var win = resolveWindow(ev.window);
+  var days = Math.max(1, dayIndex(TODAY, win.end));
+  if (days > HORIZON) days = HORIZON;
+
+  // first pass: filter by dc/cat, project, derive per-placement status
+  var rows = [];
+  PLACEMENTS.forEach(function(p){
+    if (ev.scope.dcs && ev.scope.dcs.indexOf(p.dc) === -1) return;
+    if (ev.scope.cats && ev.scope.cats.indexOf(p.cat) === -1) return;
+    var pr = project(p, HORIZON);
+    var committed = 0, breach = -1, stockout = -1;
+    for (var i = 0; i < days; i++){
+      committed += pr.ship[i];
+      if (breach < 0 && pr.onHand[i] < p.safety) breach = i;
+      if (stockout < 0 && pr.onHand[i] <= 0.5) stockout = i;
+    }
+    var status = "good";
+    if (stockout >= 0 || (breach >= 0 && breach < days * 0.35)) status = "crit";
+    else if (breach >= 0) status = "warn";
+    var cover = p.daily > 0 ? Math.round(p.onHand / (p.daily * 1.0)) : 999;
+    rows.push({
+      p:p, pr:pr, committed:committed, breach:breach, stockout:stockout, status:status,
+      cover:cover, net: p.onHand - committed
+    });
+  });
+
+  // second pass: status filter applies after projection
+  if (ev.scope.status) rows = rows.filter(function(r){ return ev.scope.status.indexOf(r.status) !== -1; });
+
+  // aggregate to buckets
+  var onhand = [], ship = [], safety = 0;
+  rows.forEach(function(r){ safety += r.p.safety; });
+  bk.forEach(function(b){
+    var endIdx = Math.min(days - 1, Math.max(0, dayIndex(TODAY, b.end) - 1));
+    var s0 = Math.max(0, dayIndex(TODAY, b.start)), s1 = Math.min(days, dayIndex(TODAY, b.end));
+    var h = 0, sh = 0;
+    rows.forEach(function(r){
+      h += r.pr.onHand[endIdx];
+      for (var i = s0; i < s1; i++) sh += r.pr.ship[i];
+    });
+    onhand.push(h); ship.push(sh);
+  });
+
+  // sort + limit for tables
+  var dir = ev.sort.dir === "desc" ? -1 : 1;
+  var sorted = rows.slice().sort(function(a, b){
+    var f = ev.sort.field;
+    if (f === "cover")  return (a.cover - b.cover) * dir;
+    if (f === "onhand") return (a.p.onHand - b.p.onHand) * dir;
+    if (f === "sku")    return a.p.sku.localeCompare(b.p.sku) * dir;
+    if (f === "dc")     return a.p.dcName.localeCompare(b.p.dcName) * dir;
+    return (a.net - b.net) * dir;
+  });
+
+  var totalOnHand = 0, totalDaily = 0, openPos = 0, latePos = 0, atRisk = 0;
+  rows.forEach(function(r){
+    totalOnHand += r.p.onHand; totalDaily += r.p.daily;
+    // only receipts falling inside the window count as open, so the metric moves with it
+    r.p.pos.forEach(function(po){
+      if (po.late){ latePos++; openPos++; }
+      else if (po.due >= 0 && po.due < days) openPos++;
+    });
+    if (r.status !== "good") atRisk++;
+  });
+
+  return {
+    ev:ev, bk:bk, rows:rows, sorted:sorted, onhand:onhand, ship:ship, safety:safety,
+    days:days, win:win,
+    totalOnHand:totalOnHand, totalDaily:totalDaily, openPos:openPos, latePos:latePos,
+    atRisk:atRisk, universe:rows.length,
+    weeksCover: totalDaily > 0 ? totalOnHand / (totalDaily * 7) : 0
+  };
+}
+
+function scopeLabel(scope){
+  var parts = [];
+  if (!scope.dcs) parts.push("All " + DCS.length + " DCs");
+  else if (scope.dcs.length === 1) parts.push(DC_BY_ID[scope.dcs[0]].name + " DC");
+  else parts.push(scope.dcs.length + " DCs");
+  if (scope.cats) parts.push(scope.cats.map(function(c){ return CAT_BY_ID[c].name; }).join(" + "));
+  if (scope.status) parts.push(scope.status.map(function(s){ return s === "crit" ? "shortfalls" : s === "warn" ? "at risk" : "covered"; }).join(" + "));
+  return parts.join(" · ");
+}
+
+/* ============================================================
+   4 · operations — the patch language every turn compiles to
+   ============================================================ */
+
+function targetBlock(spec, target){
+  if (!target || target === "canvas") return null;
+  for (var i = 0; i < spec.blocks.length; i++) if (spec.blocks[i].id === target) return spec.blocks[i];
+  return null;
+}
+function scopeSlot(spec, target){
+  var b = targetBlock(spec, target);
+  return b ? b.scope : spec.scope;
+}
+
+function applyOp(spec, op){
+  var b = targetBlock(spec, op.target);
+  var host = b || spec;
+  switch (op.op){
+    case "scope.dcs":    scopeSlot(spec, op.target).dcs    = op.value; break;
+    case "scope.cats":   scopeSlot(spec, op.target).cats   = op.value; break;
+    case "scope.status": scopeSlot(spec, op.target).status = op.value; break;
+    case "window": host.window = op.value; break;
+    case "grain":  host.grain  = op.value; break;
+    case "safety": host.safety = op.value; break;
+    case "sort":   host.sort   = op.value; break;
+    case "limit":  host.limit  = op.value; break;
+    case "name":     spec.name = op.value; break;
+    case "schedule": spec.schedule = op.value; break;
+    case "block.add":
+      if (!spec.blocks.some(function(x){ return x.id === op.id; }))
+        spec.blocks.push(Object.assign({ id:op.id, scope:emptyScope(), grain:null }, op.value));
+      break;
+    case "block.remove":
+      spec.blocks = spec.blocks.filter(function(x){ return x.id !== op.id; });
+      break;
+    case "clear.overrides":
+      var t = targetBlock(spec, op.target);
+      if (t){ t.scope = emptyScope(); t.grain = null; t.window = null; t.sort = null; t.limit = null; t.safety = null; }
+      break;
+  }
+  return spec;
+}
+
+// Human-readable diff line, computed against the spec as it was before the op.
+function describeOp(before, op){
+  var b = targetBlock(before, op.target);
+  var where = b ? b.title : null;
+  var pre = effective(before, b);
+  function line(kind, text){ return { kind:kind, text: where ? text + "  ·  " + shortTitle(where) : text }; }
+
+  switch (op.op){
+    case "scope.dcs":
+      return line(op.value === null ? "rm" : "mod",
+        "scope · " + scopeDcsText(pre.scope.dcs) + " → " + scopeDcsText(op.value));
+    case "scope.cats":
+      return line(op.value === null ? "rm" : "mod",
+        "category · " + (pre.scope.cats ? pre.scope.cats.map(function(c){return CAT_BY_ID[c].name;}).join("+") : "all") +
+        " → " + (op.value ? op.value.map(function(c){return CAT_BY_ID[c].name;}).join("+") : "all"));
+    case "scope.status":
+      return line(op.value === null ? "rm" : "mod",
+        "rows · " + (op.value ? op.value.map(function(s){return s==="crit"?"shortfalls":s==="warn"?"at risk":"covered";}).join("+") : "all statuses"));
+    case "window":
+      return line("mod", "window · " + windowLabel(pre.window) + " → " + windowLabel(op.value));
+    case "grain":
+      return line("mod", "grain · " + pre.grain + " → " + op.value);
+    case "safety":
+      return line(op.value ? "add" : "rm", "safety-stock rule · " + (op.value ? "shown" : "hidden"));
+    case "sort":
+      return line("mod", "sort · " + op.value.field + " " + (op.value.dir === "desc" ? "desc" : "asc"));
+    case "limit":
+      return line("mod", "rows shown · " + pre.limit + " → " + op.value);
+    case "name":
+      return { kind:"add", text:"name · " + op.value };
+    case "schedule":
+      return { kind:"add", text:"schedule · " + op.value.label };
+    case "block.add":
+      return { kind:"add", text:"block · " + op.value.title };
+    case "block.remove":
+      var gone = before.blocks.filter(function(x){ return x.id === op.id; })[0];
+      return { kind:"rm", text:"block · " + (gone ? gone.title : op.id) };
+    case "clear.overrides":
+      return { kind:"rm", text:"block overrides cleared" + (where ? "  ·  " + shortTitle(where) : "") };
+  }
+  return { kind:"mod", text:op.op };
+}
+function scopeDcsText(dcs){
+  if (!dcs) return "all DCs";
+  if (dcs.length === 1) return DC_BY_ID[dcs[0]].name;
+  return dcs.map(function(d){ return DC_BY_ID[d].name; }).join(" + ");
+}
+function shortTitle(t){ return t.length > 26 ? t.slice(0, 24) + "…" : t; }
+
+/* ============================================================
+   5 · intent matcher
+   ============================================================ */
+
+var WORDNUM = { one:1, two:2, three:3, four:4, five:5, six:6, seven:7, eight:8, nine:9, ten:10, twelve:12 };
+
+// Everything after "call it …" is a label, not a query. Requiring an explicit object
+// ("it"/"this"/"the workspace") keeps this from swallowing ordinary sentences.
+var NAME_RE = /\b(?:call|rename|name)\s+(?:it|this|the workspace)\s+["']?(.+?)["']?\s*$/i;
+
+function parseName(t){
+  var m = t.match(NAME_RE);
+  if (!m) return null;
+  var v = m[1].trim().replace(/[."']+$/, "");
+  if (!v || v.length > 60) return null;
+  return [{ op:"name", value:v.charAt(0).toUpperCase() + v.slice(1) }];
+}
+
+var RULES = [
+
+  /* --- scope: named DCs --- */
+  function(t){
+    var found = [];
+    DCS.forEach(function(d){ if (new RegExp("\\b" + d.id + "\\b", "i").test(t)) found.push(d.id); });
+    if (!found.length) return null;
+    if (/\b(?:not|except|exclude|without|other than)\s+\w*\s*(chicago|atlanta|dallas|newark|fresno|memphis)/i.test(t)){
+      var keep = DCS.map(function(d){ return d.id; }).filter(function(id){ return found.indexOf(id) === -1; });
+      return [{ op:"scope.dcs", value:keep }];
+    }
+    return [{ op:"scope.dcs", value:found }];
+  },
+
+  /* --- scope: back to everything --- */
+  function(t){
+    if (!/\b(all (?:the )?(?:dcs?|sites?|warehouses?|centres?|centers?|locations?)|every dc|network[ -]?wide|whole network|the network|everywhere|all sites|unscope|remove the filter|clear the filter)\b/i.test(t)) return null;
+    return [{ op:"scope.dcs", value:null }];
+  },
+
+  /* --- scope: product category --- */
+  function(t){
+    var found = [];
+    CATS.forEach(function(c){
+      var stem = c.id.replace(/s$/, "");
+      if (new RegExp("\\b" + stem + "s?\\b", "i").test(t)) found.push(c.id);
+    });
+    if (!found.length){
+      if (/\ball (?:the )?(?:categories|products|skus|parts|items)\b/i.test(t)) return [{ op:"scope.cats", value:null }];
+      return null;
+    }
+    return [{ op:"scope.cats", value:found }];
+  },
+
+  /* --- rows: status filter --- */
+  function(t){
+    if (/\b(?:all|every) (?:rows?|skus?|statuses)\b/i.test(t) || /\bshow (?:me )?everything\b/i.test(t))
+      return [{ op:"scope.status", value:null }];
+    var v = [];
+    if (/\b(shortfalls?|stock ?outs?|stocking out|going negative|below zero|short)\b/i.test(t)) v.push("crit");
+    if (/\b(at[- ]risk|risky|exceptions?|problems?|trouble|running tight)\b/i.test(t)) { v.push("crit"); v.push("warn"); }
+    if (/\b(covered|healthy|fine|safe)\b/i.test(t)) v.push("good");
+    if (!v.length) return null;
+    return [{ op:"scope.status", value:v.filter(function(x, i, a){ return a.indexOf(x) === i; }) }];
+  },
+
+  /* --- window --- */
+  function(t){
+    var m = t.match(/\bnext\s+([a-z]+|\d+)\s*(day|week|month|quarter|year)s?\b/i);
+    if (m){
+      var n = parseInt(m[1], 10);
+      if (isNaN(n)) n = WORDNUM[m[1].toLowerCase()] || null;
+      if (n) return [{ op:"window", value:{ kind:"relative", n:n, unit:m[2].toLowerCase() } }];
+    }
+    m = t.match(/\b(?:for|over|across|in)?\s*(?:the\s+)?(\d+)[ -]?(day|week|month)s?\b/i);
+    if (m) return [{ op:"window", value:{ kind:"relative", n:parseInt(m[1], 10), unit:m[2].toLowerCase() } }];
+    if (/\bnext quarter\b/i.test(t))    return [{ op:"window", value:{ kind:"relative", n:1, unit:"quarter" } }];
+    if (/\bthis quarter\b/i.test(t))    return [{ op:"window", value:{ kind:"relative", n:1, unit:"quarter" } }];
+    if (/\bnext week\b/i.test(t))       return [{ op:"window", value:{ kind:"relative", n:1, unit:"week" } }];
+    if (/\bnext month\b/i.test(t))      return [{ op:"window", value:{ kind:"relative", n:1, unit:"month" } }];
+    if (/\brest of (?:the )?year\b/i.test(t)) return [{ op:"window", value:{ kind:"relative", n:5, unit:"month" } }];
+    if (/\b(further out|longer|extend|zoom out|wider)\b/i.test(t)) return [{ op:"window", value:{ kind:"relative", n:6, unit:"month" } }];
+    if (/\b(shorter|closer in|zoom in|nearer term|near term)\b/i.test(t)) return [{ op:"window", value:{ kind:"relative", n:4, unit:"week" } }];
+    return null;
+  },
+
+  /* --- grain --- */
+  function(t){
+    if (/\b(dai?ly|by day|per day|day by day|day[- ]level)\b/i.test(t))          return [{ op:"grain", value:"day" }];
+    if (/\b(weekly|by week|per week|week by week|week[- ]level)\b/i.test(t))     return [{ op:"grain", value:"week" }];
+    if (/\b(monthly|by month|per month|month by month|month[- ]level)\b/i.test(t)) return [{ op:"grain", value:"month" }];
+    return null;
+  },
+
+  /* --- safety stock rule --- */
+  function(t){
+    if (!/\bsafety(?:[ -]stock)?\b/i.test(t)) return null;
+    if (/\b(hide|remove|drop|without|no|lose|take off|get rid of)\b/i.test(t)) return [{ op:"safety", value:false }];
+    if (/\b(show|add|include|with|put back|bring back)\b/i.test(t))            return [{ op:"safety", value:true }];
+    return null;
+  },
+
+  /* --- sort --- */
+  function(t){
+    var m = t.match(/\bsort(?:ed)?\s+(?:it\s+|them\s+)?by\s+([a-z ]+?)(?:\s+(asc|desc|ascending|descending))?\s*$/i);
+    if (m){
+      var f = m[1].trim().toLowerCase(), field = "net";
+      if (/cover|days/.test(f))      field = "cover";
+      else if (/on.?hand|stock/.test(f)) field = "onhand";
+      else if (/sku|part|code/.test(f))  field = "sku";
+      else if (/dc|site|location|warehouse/.test(f)) field = "dc";
+      var dir = m[2] && /desc/i.test(m[2]) ? "desc" : "asc";
+      return [{ op:"sort", value:{ field:field, dir:dir } }];
+    }
+    if (/\bworst (?:first|ones? first)\b/i.test(t)) return [{ op:"sort", value:{ field:"net", dir:"asc" } }];
+    if (/\bbest first\b/i.test(t))                  return [{ op:"sort", value:{ field:"net", dir:"desc" } }];
+    return null;
+  },
+
+  /* --- row limit --- */
+  function(t){
+    var m = t.match(/\b(?:top|first|just|only|show)\s+(\d+)\b(?!\s*(?:day|week|month))/i);
+    if (m) return [{ op:"limit", value: Math.max(1, Math.min(60, parseInt(m[1], 10))) }];
+    if (/\b(show|see) (?:me )?(?:all|every|the rest|more)\b/i.test(t) && /\b(rows?|skus?|lines?)\b/i.test(t))
+      return [{ op:"limit", value:60 }];
+    return null;
+  },
+
+  /* --- add blocks --- */
+  function(t, ctx){
+    if (!/\b(add|show|include|bring in|give me|i (?:also )?(?:want|need)|put in|drop in|throw in)\b/i.test(t)) return null;
+    var mk = function(v){ return [{ op:"block.add", id:ctx.nextId(), value:v }]; };
+    if (/\b(late|overdue|open|inbound|incoming)\b/i.test(t) && /\b(po|pos|purchase orders?|orders? in|receipts?)\b/i.test(t))
+      return mk({ type:"pos", title:"Inbound purchase orders" });
+    if (/\blead[ -]?times?\b/i.test(t) || /\bsupplier(?:s)?\b/i.test(t))
+      return mk({ type:"suppliers", title:"Supplier lead-time drift" });
+    if (/\b(alert|rule|flag|notify|warn me|watch)\b/i.test(t))
+      return mk({ type:"alerts", title:"Alert rules" });
+    if (/\bnotes?\b/i.test(t))
+      return mk({ type:"note", title:"Note", body:"Written during exploration. Kept with the workspace." });
+    if (/\b(chart|graph|plot|trend|curve)\b/i.test(t))
+      return mk({ type:"chart", title:"Stock coverage vs. committed shipments" });
+    if (/\b(table|list|grid|breakdown|rows)\b/i.test(t))
+      return mk({ type:"table", title:"SKUs by projected coverage" });
+    if (/\b(metrics?|kpis?|numbers|summary|headline)\b/i.test(t))
+      return mk({ type:"metrics", title:"Position at a glance" });
+    return null;
+  },
+
+  /* --- remove blocks --- */
+  function(t, ctx){
+    if (!/\b(remove|drop|delete|hide|get rid of|take (?:out|away)|lose)\b/i.test(t)) return null;
+    if (/\bsafety\b/i.test(t)) return null; // handled by the safety rule
+    var want = null;
+    if (/\b(chart|graph|plot|curve)\b/i.test(t))            want = "chart";
+    else if (/\b(table|list|grid|rows)\b/i.test(t))         want = "table";
+    else if (/\b(metrics?|kpis?|numbers|summary)\b/i.test(t)) want = "metrics";
+    else if (/\b(po|pos|purchase orders?)\b/i.test(t))      want = "pos";
+    else if (/\bsupplier|lead[ -]?time/i.test(t))           want = "suppliers";
+    else if (/\balerts?|rules?\b/i.test(t))                 want = "alerts";
+    else if (/\bnotes?\b/i.test(t))                         want = "note";
+    else if (ctx.target !== "canvas" && /\b(this|it|that)\b/i.test(t)){
+      return [{ op:"block.remove", id:ctx.target }];
+    }
+    if (!want) return null;
+    var hit = ctx.spec.blocks.filter(function(b){ return b.type === want; });
+    if (!hit.length) return null;
+    return [{ op:"block.remove", id:hit[hit.length - 1].id }];
+  },
+
+  /* --- reset a block's overrides --- */
+  function(t, ctx){
+    if (ctx.target === "canvas") return null;
+    if (!/\b(reset|clear|match the (?:canvas|rest|others)|same as (?:the )?(?:canvas|rest)|follow the canvas|back to normal)\b/i.test(t)) return null;
+    return [{ op:"clear.overrides" }];
+  },
+
+  /* --- naming (see NAME_RE: matched ahead of everything else) --- */
+  function(t){ return parseName(t); },
+
+  /* --- schedule / keep --- */
+  function(t){
+    var days = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
+    var m = t.match(/\bevery\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i);
+    if (m){
+      var d = m[1].toLowerCase();
+      var time = /\bmorning\b/i.test(t) ? "06:00" : /\bafternoon\b/i.test(t) ? "14:00" : "06:00";
+      return [{ op:"schedule", value:{ kind:"weekly", day:d, time:time,
+        label: d.charAt(0).toUpperCase() + d.slice(1) + "s " + time } }];
+    }
+    if (/\bevery (?:day|morning)\b|\bdaily\b.*\b(?:refresh|send|email|run)\b/i.test(t))
+      return [{ op:"schedule", value:{ kind:"daily", time:"06:00", label:"Daily 06:00" } }];
+    if (/\bevery month\b|\bmonthly\b.*\b(?:refresh|send|email|run)\b/i.test(t))
+      return [{ op:"schedule", value:{ kind:"monthly", time:"06:00", label:"1st of month 06:00" } }];
+    return null;
+  }
+];
+
+// Last resort: a bare noun phrase naming something we can build ("supplier lead times")
+// is read as "add one". Only consulted when nothing else matched, so it can't hijack
+// a sentence that already carried a verb.
+var BARE_BLOCKS = [
+  [/^\s*(?:the\s+)?supplier(?:s)?(?:\s+lead[ -]?times?)?\s*$|^\s*lead[ -]?times?\s*$/i, { type:"suppliers", title:"Supplier lead-time drift" }],
+  [/^\s*(?:the\s+)?(?:late|open|inbound)?\s*(?:pos?|purchase orders?)\s*$/i,             { type:"pos",       title:"Inbound purchase orders" }],
+  [/^\s*(?:an?\s+)?alerts?(?:\s+rules?)?\s*$/i,                                          { type:"alerts",    title:"Alert rules" }],
+  [/^\s*(?:a\s+)?(?:chart|graph|plot)\s*$/i,                                             { type:"chart",     title:"Stock coverage vs. committed shipments" }],
+  [/^\s*(?:a\s+)?(?:table|list|grid)\s*$/i,                                              { type:"table",     title:"SKUs by projected coverage" }],
+  [/^\s*(?:the\s+)?(?:metrics?|kpis?|numbers|summary)\s*$/i,                              { type:"metrics",   title:"Position at a glance" }]
+];
+
+function parseFallback(text, ctx){
+  for (var i = 0; i < BARE_BLOCKS.length; i++){
+    if (BARE_BLOCKS[i][0].test(text)) return [{ op:"block.add", id:ctx.nextId(), value:BARE_BLOCKS[i][1] }];
+  }
+  return [];
+}
+
+// Parse free text into ops. Ops inherit the current target unless they're canvas-only.
+var CANVAS_ONLY = { name:1, schedule:1, "block.add":1, "block.remove":1 };
+
+function parseIntent(text, ctx){
+  // Naming is exclusive — "call it Chicago coverage watch" must not also filter to Chicago.
+  var named = parseName(text);
+  if (named){ named[0].target = "canvas"; return named; }
+
+  var ops = [];
+  RULES.forEach(function(rule){
+    var got = rule(text, ctx);
+    if (got) got.forEach(function(o){ ops.push(o); });
+  });
+  if (!ops.length) ops = parseFallback(text, ctx);
+  // de-dupe by op kind, last write wins
+  var seen = {}, out = [];
+  for (var i = ops.length - 1; i >= 0; i--){
+    var key = ops[i].op + "|" + (ops[i].id || "");
+    if (ops[i].op === "block.add" || ops[i].op === "block.remove"){ out.unshift(ops[i]); continue; }
+    if (seen[key]) continue;
+    seen[key] = 1; out.unshift(ops[i]);
+  }
+  out.forEach(function(o){ o.target = CANVAS_ONLY[o.op] ? "canvas" : ctx.target; });
+  return out;
+}
+
+/* ============================================================
+   6 · state + replay
+   ============================================================ */
+
+var state = {
+  turns: [],          // { id, text, target, ops, on }
+  target: "canvas",
+  spec: seedSpec(),
+  kept: false,
+  history: [],
+  histIdx: -1,
+  nextBlock: 1
+};
+
+function replay(){
+  var spec = seedSpec();
+  state.turns.forEach(function(t){
+    if (!t.on) return;
+    t.ops.forEach(function(op){ applyOp(spec, op); });
+  });
+  state.spec = spec;
+  // a target that no longer exists falls back to the canvas
+  if (state.target !== "canvas" && !targetBlock(spec, state.target)) state.target = "canvas";
+}
+
+function commit(text, ops){
+  var before = clone(state.spec);
+  var turn = { id:"t" + (state.turns.length + 1), text:text, target:state.target, ops:ops, on:true,
+    diff: ops.map(function(op){
+      var d = describeOp(before, op);
+      applyOp(before, op);
+      return d;
+    })
+  };
+  state.turns.push(turn);
+  replay();
+  return turn;
+}
+
+/* ============================================================
+   7 · rendering
+   ============================================================ */
+
+var lastChangedBlocks = [], lastUntouched = [];
+
+function numFmt(v){
+  if (v >= 1000000) return (v / 1000000).toFixed(1) + "M";
+  if (v >= 10000)   return Math.round(v / 1000) + "k";
+  if (v >= 1000)    return (v / 1000).toFixed(1) + "k";
+  return String(Math.round(v));
+}
+
+/* ---------- chart ---------- */
+// Fixed geometry, shared with the tweener so it can recompute paths mid-flight.
+var G = { W:760, H:250, pl:48, pr:46, pt:14, pb:34 };
+G.iw = G.W - G.pl - G.pr; G.ih = G.H - G.pt - G.pb;
+
+// Series captured at build time, keyed by block, so the next render can animate from it.
+var CHART_NOW = {}, CHART_PREV = {};
+
+function chartSvg(q, blockId){
+  var W = G.W, H = G.H, pl = G.pl, pr = G.pr, pt = G.pt, pb = G.pb;
+  var iw = G.iw, ih = G.ih;
+  var n = q.bk.length, band = iw / n;
+  var peak = Math.max.apply(null, q.onhand.concat([q.safety]));
+  var maxL = (peak || 1) * 1.18;
+  var maxR = (Math.max.apply(null, q.ship) || 1) * 2.6;
+  var yL = function(v){ return pt + ih - (v / maxL) * ih; };
+  var hR = function(v){ return (v / maxR) * ih; };
+  var cx = function(i){ return pl + band * i + band / 2; };
+  var showSafety = q.ev.safety && q.safety > 0;
+
+  if (blockId) CHART_NOW[blockId] = {
+    onhand: Array.prototype.slice.call(q.onhand),
+    ship:   Array.prototype.slice.call(q.ship),
+    safety: q.safety, maxL: maxL, maxR: maxR, showSafety: showSafety
+  };
+
+  var s = '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" data-chart="' + esc(blockId || "") +
+          '" aria-label="Projected on-hand stock against committed shipments, ' +
+          esc(scopeLabel(q.ev.scope)) + ', by ' + esc(q.ev.grain) + '">';
+
+  for (var g = 0; g <= 4; g++){
+    var gv = maxL * g / 4, gy = yL(gv);
+    s += '<line x1="' + pl + '" y1="' + gy.toFixed(1) + '" x2="' + (W - pr) + '" y2="' + gy.toFixed(1) + '" stroke="var(--line-soft)" stroke-width="1"/>';
+    s += '<text x="' + (pl - 8) + '" y="' + (gy + 3.5).toFixed(1) + '" text-anchor="end" font-family="var(--mono)" font-size="9.5" fill="var(--text-3)">' + numFmt(gv) + '</text>';
+  }
+
+  // first bucket where the network dips under aggregate safety stock
+  if (showSafety){
+    var start = -1;
+    for (var i = 0; i < n; i++){ if (q.onhand[i] < q.safety){ start = i; break; } }
+    if (start > -1){
+      var bx = pl + band * start;
+      s += '<rect class="c-fade" x="' + bx.toFixed(1) + '" y="' + pt + '" width="' + (W - pr - bx).toFixed(1) + '" height="' + ih + '" fill="var(--crit)" opacity="0.07"/>';
+      s += '<line class="c-fade" x1="' + bx.toFixed(1) + '" y1="' + pt + '" x2="' + bx.toFixed(1) + '" y2="' + (pt + ih) + '" stroke="var(--crit)" stroke-width="1" stroke-dasharray="3 3"/>';
+      if (band * (n - start) > 120)
+        s += '<text class="c-fade" x="' + (bx + 7).toFixed(1) + '" y="' + (pt + 13) + '" font-family="var(--mono)" font-size="9.5" font-weight="600" fill="var(--crit)">below safety stock</text>';
+    }
+  }
+
+  var bw = Math.max(1.5, Math.min(band * 0.44, 20));
+  for (i = 0; i < n; i++){
+    var bh = hR(q.ship[i]);
+    s += '<rect class="c-bar" x="' + (cx(i) - bw / 2).toFixed(1) + '" y="' + (pt + ih - bh).toFixed(1) + '" width="' + bw.toFixed(1) +
+         '" height="' + Math.max(0, bh).toFixed(1) + '" rx="1" fill="var(--text-3)" opacity="0.42"/>';
+  }
+
+  var line = "", area = "M " + cx(0).toFixed(1) + " " + (pt + ih);
+  for (i = 0; i < n; i++){
+    var px = cx(i).toFixed(1), py = yL(q.onhand[i]).toFixed(1);
+    line += (i ? " L " : "M ") + px + " " + py;
+    area += " L " + px + " " + py;
+  }
+  area += " L " + cx(n - 1).toFixed(1) + " " + (pt + ih) + " Z";
+  s += '<path class="c-area" d="' + area + '" fill="var(--accent)" opacity="0.11"/>';
+  s += '<path class="c-line" d="' + line + '" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
+
+  if (showSafety){
+    var sy = yL(q.safety);
+    s += '<line class="c-safety" x1="' + pl + '" y1="' + sy.toFixed(1) + '" x2="' + (W - pr) + '" y2="' + sy.toFixed(1) + '" stroke="var(--warn)" stroke-width="1.5" stroke-dasharray="5 4"/>';
+    s += '<text class="c-safety-t" x="' + (W - pr + 5) + '" y="' + (sy + 3.5).toFixed(1) + '" font-family="var(--mono)" font-size="9" fill="var(--warn)">safety</text>';
+  }
+
+  if (n <= 40){
+    for (i = 0; i < n; i++){
+      var under = showSafety && q.onhand[i] < q.safety;
+      s += '<circle class="c-pt" cx="' + cx(i).toFixed(1) + '" cy="' + yL(q.onhand[i]).toFixed(1) + '" r="' + (i === n - 1 ? 3.4 : 2.4) +
+           '" fill="' + (under ? "var(--crit)" : "var(--accent)") + '" stroke="var(--panel)" stroke-width="1.5"/>';
+    }
+  }
+
+  var every = Math.ceil(n / 12);
+  for (i = 0; i < n; i++){
+    if (i % every) continue;
+    s += '<text x="' + cx(i).toFixed(1) + '" y="' + (H - 13) + '" text-anchor="middle" font-family="var(--mono)" font-size="9.5" fill="var(--text-3)">' + esc(q.bk[i].label) + '</text>';
+  }
+  s += '<line x1="' + pl + '" y1="' + (pt + ih) + '" x2="' + (W - pr) + '" y2="' + (pt + ih) + '" stroke="var(--line)" stroke-width="1"/>';
+  return s + '</svg>';
+}
+
+function legendHtml(q){
+  return '<div class="legend">' +
+    '<span class="lg"><span class="line" style="background:var(--accent)"></span>Projected on-hand</span>' +
+    '<span class="lg"><span style="background:var(--text-3); opacity:.42"></span>Committed shipments</span>' +
+    (q.ev.safety ? '<span class="lg"><span class="dash"></span>Safety stock</span>' : '') +
+  '</div>';
+}
+
+/* ---------- block bodies ---------- */
+function bodyChart(q, blockId){
+  return '<div class="chart-wrap">' + chartSvg(q, blockId) + '</div>';
+}
+
+function bodyMetrics(q, blockId){
+  var cover = q.weeksCover;
+  var coverCls = cover < 4 ? "crit" : cover < 7 ? "warn" : "good";
+  var riskPct = q.universe ? q.atRisk / q.universe : 0;
+  // absolute floor as well as a share, so a 5-SKU scope with 2 problems isn't "High"
+  var fill = (riskPct > 0.35 && q.atRisk >= 3) ? ["High","crit"]
+           : (riskPct > 0.15 || q.atRisk >= 3) ? ["Medium","warn"] : ["Low","good"];
+  var ms = [
+    ["Weeks of cover", cover.toFixed(1), coverCls, q.universe + " SKU-sites"],
+    ["SKUs at risk", String(q.atRisk), q.atRisk ? (riskPct > 0.3 ? "crit" : "warn") : "good", "of " + q.universe],
+    ["Open purchase orders", String(q.openPos), q.latePos ? "warn" : "", q.latePos + " late"],
+    ["Fill-rate risk", fill[0], fill[1], windowLabel(q.ev.window)]
+  ];
+  var h = '<div class="metrics">';
+  ms.forEach(function(m){
+    // numeric values carry their target so the tweener can count up to them
+    var num = /^-?[\d.]+$/.test(m[1]) ? ' data-num="' + m[1] + '"' : "";
+    h += '<div class="metric"><span class="metric-k">' + esc(m[0]) + '</span>' +
+         '<div class="metric-v ' + m[2] + '" data-mk="' + esc((blockId || "") + "|" + m[0]) + '"' + num + '>' + esc(m[1]) + '</div>' +
+         '<span class="metric-s">' + esc(m[3]) + '</span></div>';
+  });
+  return h + '</div>';
+}
+
+function bodyTable(q){
+  if (!q.sorted.length) return '<p class="empty-rows">No SKUs match this scope.</p>';
+  var h = '<div class="tbl-wrap"><table><thead><tr>' +
+    '<th>SKU</th><th>Description</th><th>DC</th><th class="num">On hand</th>' +
+    '<th class="num">Committed</th><th class="num">Net</th><th class="num">Cover</th><th>Status</th>' +
+    '</tr></thead><tbody>';
+  q.sorted.slice(0, q.ev.limit).forEach(function(r){
+    var net = r.net, neg = net < 0;
+    h += '<tr><td>' + esc(r.p.sku) + '</td><td>' + esc(r.p.desc) + '</td><td>' + esc(r.p.dcName) + '</td>' +
+         '<td class="num">' + commas(r.p.onHand) + '</td>' +
+         '<td class="num">' + commas(r.committed) + '</td>' +
+         '<td class="num' + (neg ? " neg" : "") + '">' + (neg ? "−" : "+") + commas(Math.abs(net)) + '</td>' +
+         '<td class="num">' + (r.cover > 365 ? "1y+" : r.cover + " d") + '</td>' +
+         '<td><span class="tag ' + r.status + '">' + (r.status === "crit" ? "Shortfall" : r.status === "warn" ? "At risk" : "Covered") + '</span></td></tr>';
+  });
+  return h + '</tbody></table></div>';
+}
+
+function bodyPos(q){
+  var list = [];
+  q.rows.forEach(function(r){
+    r.p.pos.forEach(function(po){
+      if (!po.late && (po.due < 0 || po.due >= q.days)) return;
+      list.push({ ref:po.ref, sku:r.p.sku, desc:r.p.desc, dc:r.p.dcName, qty:po.qty,
+        due:addDays(TODAY, po.due), late:po.late, supplier:r.p.supplier });
+    });
+  });
+  list.sort(function(a, b){ return a.due - b.due; });
+  if (!list.length) return '<p class="empty-rows">No open purchase orders in this scope.</p>';
+  var h = '<div class="tbl-wrap"><table><thead><tr>' +
+    '<th>PO</th><th>Supplier</th><th>SKU</th><th>DC</th><th class="num">Qty</th><th>Due</th><th>Status</th>' +
+    '</tr></thead><tbody>';
+  list.slice(0, Math.max(q.ev.limit, 8)).forEach(function(o){
+    h += '<tr><td>' + esc(o.ref) + '</td><td>' + esc(o.supplier) + '</td><td>' + esc(o.sku) + '</td>' +
+         '<td>' + esc(o.dc) + '</td><td class="num">' + commas(o.qty) + '</td>' +
+         '<td>' + esc(fmtDay(o.due)) + '</td>' +
+         '<td><span class="tag ' + (o.late ? "crit" : "good") + '">' + (o.late ? "Late" : "On time") + '</span></td></tr>';
+  });
+  return h + '</tbody></table></div>';
+}
+
+function bodySuppliers(q){
+  var agg = {};
+  q.rows.forEach(function(r){
+    var s = agg[r.p.supplier] || (agg[r.p.supplier] = { n:0, drift:0, lead:0, risk:0 });
+    s.n++; s.drift += r.p.drift; s.lead += r.p.lead; if (r.status !== "good") s.risk++;
+  });
+  var names = Object.keys(agg);
+  if (!names.length) return '<p class="empty-rows">No suppliers in this scope.</p>';
+  var h = '<div class="tbl-wrap"><table><thead><tr>' +
+    '<th>Supplier</th><th class="num">SKU-sites</th><th class="num">Contracted lead</th>' +
+    '<th class="num">Drift</th><th class="num">At risk</th><th>Status</th></tr></thead><tbody>';
+  names.sort(function(a, b){ return (agg[b].drift / agg[b].n) - (agg[a].drift / agg[a].n); }).forEach(function(nm){
+    var s = agg[nm], drift = Math.round(s.drift / s.n), lead = Math.round(s.lead / s.n);
+    var tag = drift >= 5 ? "crit" : drift >= 2 ? "warn" : "good";
+    h += '<tr><td>' + esc(nm) + '</td><td class="num">' + s.n + '</td><td class="num">' + lead + ' d</td>' +
+         '<td class="num' + (drift > 0 ? " neg" : "") + '">' + (drift > 0 ? "+" : "") + drift + ' d</td>' +
+         '<td class="num">' + s.risk + '</td>' +
+         '<td><span class="tag ' + tag + '">' + (tag === "crit" ? "Slipping" : tag === "warn" ? "Watch" : "Stable") + '</span></td></tr>';
+  });
+  return h + '</tbody></table></div>';
+}
+
+function bodyAlerts(q){
+  var fires = q.rows.filter(function(r){ return r.breach >= 0; })
+                    .sort(function(a, b){ return a.breach - b.breach; }).slice(0, 6);
+  if (!fires.length) return '<p class="empty-rows">Nothing breaches safety stock inside this window.</p>';
+  var h = "";
+  fires.forEach(function(r){
+    h += '<div class="alert-row"><span class="tag ' + r.status + '">' + (r.status === "crit" ? "Shortfall" : "At risk") + '</span>' +
+         '<span>' + esc(r.p.sku) + ' · ' + esc(r.p.desc) + ' · ' + esc(r.p.dcName) + '</span>' +
+         '<span class="when">breaches ' + esc(fmtDay(addDays(TODAY, r.breach))) + '</span></div>';
+  });
+  return h;
+}
+
+function bodyNote(block){
+  return '<div class="note-body">' + esc(block.body || "") + '</div>';
+}
+
+/* ---------- block shell ---------- */
+function renderBlock(spec, block){
+  var q = compute(spec, block);
+  var sel = state.target === block.id;
+  var flash = lastChangedBlocks.indexOf(block.id) !== -1;
+  var untouched = lastUntouched.indexOf(block.id) !== -1;
+
+  var sub = "";
+  if (block.type === "note"){
+    sub = "free text · travels with the workspace";
+  } else {
+    sub = scopeLabel(q.ev.scope) + " · " + q.universe + " SKU-sites";
+    if (block.type === "chart") sub += " · " + q.ev.grain + "ly · " + windowLabel(q.ev.window);
+    if (block.type === "table") sub += " · " + Math.min(q.ev.limit, q.sorted.length) + " of " + q.sorted.length + " shown, sorted by " + q.ev.sort.field;
+  }
+
+  var ovr = hasOverride(block)
+    ? '<span class="block-ovr" data-clear="' + esc(block.id) + '">block override<span class="x" title="Clear override">×</span></span>'
+    : "";
+
+  var body =
+    block.type === "chart"     ? bodyChart(q, block.id) :
+    block.type === "metrics"   ? bodyMetrics(q, block.id) :
+    block.type === "table"     ? bodyTable(q) :
+    block.type === "pos"       ? bodyPos(q) :
+    block.type === "suppliers" ? bodySuppliers(q) :
+    block.type === "alerts"    ? bodyAlerts(q) :
+    block.type === "note"      ? bodyNote(block) : "";
+
+  return '<section class="block' + (sel ? " sel" : "") + (flash ? " flash" : "") + (untouched ? " untouched" : "") +
+    '" data-block="' + esc(block.id) + '" tabindex="0" aria-label="' + esc(block.title) + '">' +
+    '<span class="grip"></span>' +
+    '<header class="block-head" data-head="' + esc(block.id) + '">' +
+      '<div><div class="block-t">' + esc(block.title) + ovr + '</div>' +
+      '<div class="block-sub">' + esc(sub) + '</div></div>' +
+      (block.type === "chart" ? legendHtml(q) : "") +
+      '<span class="block-ask">' + (sel ? "speaking to this block" : "click to speak to this") + '</span>' +
+    '</header>' + body +
+  '</section>';
+}
+
+/* ---------- interpretation strip ---------- */
+var lastMiss = null;
+
+function renderInterp(spec){
+  if (lastMiss){
+    return '<div class="interp miss"><span class="interp-lbl">Didn\'t catch that</span>' +
+      '<span class="chip">' + esc(lastMiss) + '</span>' +
+      '<span class="interp-note">no operation matched — try one of the suggestions below</span></div>';
+  }
+  var b = targetBlock(spec, state.target);
+  var ev = effective(spec, b);
+  var lastOps = {};
+  for (var i = state.turns.length - 1; i >= 0; i--){
+    if (state.turns[i].on){ state.turns[i].ops.forEach(function(o){ lastOps[o.op] = 1; }); break; }
+  }
+  var chips = [
+    { k:"measures", t:"On-hand vs. committed", drop:false, changed:false },
+    { k:"window",   t:windowLabel(ev.window), drop:true,  changed:!!lastOps.window },
+    { k:"scope.dcs",t:(ev.scope.dcs ? scopeDcsText(ev.scope.dcs) + " only" : "All " + DCS.length + " DCs"), drop:!!ev.scope.dcs, changed:!!lastOps["scope.dcs"] },
+    { k:"grain",    t:ev.grain + "ly buckets", drop:false, changed:!!lastOps.grain }
+  ];
+  if (ev.scope.cats)   chips.push({ k:"scope.cats",   t:ev.scope.cats.map(function(c){ return CAT_BY_ID[c].name; }).join(" + "), drop:true, changed:!!lastOps["scope.cats"] });
+  if (ev.scope.status) chips.push({ k:"scope.status", t:ev.scope.status.map(function(s){ return s === "crit" ? "shortfalls" : s === "warn" ? "at risk" : "covered"; }).join(" + ") + " only", drop:true, changed:!!lastOps["scope.status"] });
+  if (spec.schedule)   chips.push({ k:"schedule",     t:spec.schedule.label, drop:true, changed:!!lastOps.schedule });
+
+  var h = '<div class="interp"><span class="interp-lbl">Reading ' + (b ? "this block" : "the canvas") + ' as</span>';
+  chips.forEach(function(c){
+    h += '<span class="chip' + (c.changed ? " changed" : "") + '">' + esc(c.t) +
+         (c.drop ? '<span class="x" data-drop="' + esc(c.k) + '" title="Remove this constraint">×</span>' : "") + '</span>';
+  });
+  h += '<span class="interp-fix">' + (b ? "scoped to one block" : "applies to everything") + '</span></div>';
+  return h;
+}
+
+/* ---------- thread ---------- */
+function renderThread(){
+  var h = '<div class="tcard seed"><p class="tcard-q" style="color:var(--text-3)">' +
+          'Seeded from your role — purchasing manager, all 6 DCs. Nothing here was asked for; it\'s the starting clay.' +
+          '</p></div>';
+  state.turns.forEach(function(t, i){
+    var live = (i === state.turns.length - 1) && t.on;
+    var tgt = targetBlock(state.spec, t.target);
+    h += '<div class="tcard' + (live ? " live" : "") + (t.on ? "" : " off") + '">' +
+      (t.target !== "canvas" ? '<span class="tcard-tgt">→ ' + esc(shortTitle(tgt ? tgt.title : "removed block")) + '</span>' : "") +
+      '<p class="tcard-q">' + esc(t.text) + '</p><div class="tcard-d">';
+    t.diff.forEach(function(d){
+      var sym = d.kind === "add" ? "+" : d.kind === "rm" ? "−" : "~";
+      h += '<span class="dline ' + d.kind + '"><b>' + sym + '</b>' + esc(d.text) + '</span>';
+    });
+    h += '</div><div class="tcard-foot">' +
+      '<button class="tlink" data-toggle="' + i + '">' + (t.on ? "revert" : "restore") + '</button>' +
+      '<button class="tlink" data-fork="' + i + '">use as prompt</button>' +
+    '</div></div>';
+  });
+  el("threadBody").innerHTML = h;
+  var on = state.turns.filter(function(t){ return t.on; }).length;
+  el("turnCount").textContent = on ? on + (on === 1 ? " turn" : " turns") : "seeded";
+}
+
+/* ---------- suggestions ---------- */
+function suggestions(){
+  var spec = state.spec, b = targetBlock(spec, state.target);
+  if (b){
+    var base = ["just chicago", "reset this block"];
+    if (b.type === "chart")  base = ["just chicago", "by month", "next quarter", "hide safety stock", "reset this block"];
+    if (b.type === "table")  base = ["only shortfalls", "top 5", "sort by cover", "just chicago", "reset this block"];
+    if (b.type === "metrics")base = ["just chicago", "next 6 weeks", "reset this block"];
+    return base;
+  }
+  if (!state.turns.length) return ["stock vs shipments for the next 2 months", "just chicago", "only shortfalls", "add late POs"];
+  if (!spec.scope.dcs) return ["just chicago", "bearings and hydraulics", "next 6 weeks", "add supplier lead times"];
+  if (!spec.schedule && !spec.name) return ["only shortfalls", "add an alert rule", "call it Chicago coverage watch", "every monday morning"];
+  return ["by month", "all DCs", "add late POs", "top 5", "next quarter"];
+}
+
+function renderSuggestions(){
+  el("sugg").innerHTML = suggestions().map(function(s){
+    return '<button class="sugg" type="button" data-sugg="' + esc(s) + '">' + esc(s) + '</button>';
+  }).join("");
+}
+
+/* ---------- command bar target ---------- */
+function renderTarget(){
+  var b = targetBlock(state.spec, state.target);
+  var box = el("cmdBox"), tgt = el("cmdTgt"), input = el("cmdInput");
+  if (b){
+    box.classList.add("targeted");
+    tgt.innerHTML = '▣ ' + esc(shortTitle(b.title)) + '<span class="x" id="clearTgt" title="Speak to the whole canvas instead">×</span>';
+    input.placeholder = "Change just this block — try “just chicago”";
+  } else {
+    box.classList.remove("targeted");
+    tgt.textContent = "◇ Canvas";
+    input.placeholder = state.turns.length
+      ? "Describe a change — or click a block to speak to it"
+      : "Describe a change — try “just chicago”";
+  }
+}
+
+/* ---------- top bar ---------- */
+function renderTop(){
+  var spec = state.spec;
+  el("wsName").innerHTML = esc(spec.name || "Untitled workspace") + ' <span class="caret">▾</span>';
+  var meta = spec.blocks.length + (spec.blocks.length === 1 ? " block" : " blocks");
+  if (state.kept) meta += " · kept" + (spec.schedule ? " · refreshes " + spec.schedule.label : "");
+  else meta += " · draft, not saved";
+  el("wsMeta").textContent = meta;
+  el("keepBtn").textContent = state.kept ? "Kept ✓" : "Keep";
+  el("keepBtn").className = state.kept ? "btn" : "btn primary";
+}
+
+/* ---------- "what just changed" banner ---------- */
+// Deltas are read off the same query engine the blocks use, so the banner can never
+// claim something the canvas doesn't show.
+function digestFor(spec, targetId){
+  var q = compute(spec, targetBlock(spec, targetId));
+  return {
+    sites:q.universe, cover:q.weeksCover, pos:q.openPos, blocks:spec.blocks.length,
+    // a share, not a count: narrowing the scope drops the absolute count of at-risk SKUs
+    // even as the situation worsens, and colouring that green would be a lie
+    riskPct: q.universe ? q.atRisk / q.universe : 0
+  };
+}
+
+var DELTAS = [
+  { k:"sites",   lbl:"SKU-sites in scope",  dir:0,  fmt:function(v){ return String(v); } },
+  { k:"cover",   lbl:"Weeks of cover",      dir:1,  fmt:function(v){ return v.toFixed(1); } },
+  { k:"riskPct", lbl:"Share at risk",       dir:-1, fmt:function(v){ return Math.round(v * 100) + "%"; } },
+  { k:"pos",     lbl:"Open POs",            dir:0,  fmt:function(v){ return String(v); } },
+  { k:"blocks",  lbl:"Blocks on canvas",    dir:0,  fmt:function(v){ return String(v); } }
+];
+
+var lastChange = null;   // { verb, text, target, diff, before, after }
+
+function changeBanner(c){
+  var tgt = targetBlock(state.spec, c.target);
+  var h = '<div class="change"><div class="change-head"><span>' + esc(c.verb || "You said") + '</span>' +
+    '<span class="said">' + esc(c.text) + '</span>' +
+    '<span class="scope">' + (tgt ? "→ " + esc(shortTitle(tgt.title)) : "→ whole canvas") + '</span></div>' +
+    '<div class="change-body"><div class="change-col"><span class="change-k">Spec changed</span>';
+  c.diff.forEach(function(d){
+    var sym = d.kind === "add" ? "+" : d.kind === "rm" ? "−" : "~";
+    h += '<div class="change-line ' + d.kind + '"><b>' + sym + '</b>' + esc(d.text) + '</div>';
+  });
+  h += '</div><div class="change-col"><span class="change-k">Data moved</span>';
+  var any = false;
+  DELTAS.forEach(function(d){
+    var a = c.before[d.k], b = c.after[d.k];
+    if (a === undefined || b === undefined) return;
+    if (d.fmt(a) === d.fmt(b)) return;
+    any = true;
+    var cls = d.dir === 0 ? "" : ((b > a) === (d.dir === 1) ? " up" : " down");
+    h += '<div class="delta"><span class="lbl">' + esc(d.lbl) + '</span>' +
+         '<span class="was">' + esc(d.fmt(a)) + '</span><span class="arw">→</span>' +
+         '<span class="now' + cls + '">' + esc(d.fmt(b)) + '</span></div>';
+  });
+  if (!any) h += '<div class="delta"><span class="lbl">no change to the numbers in view</span></div>';
+  return h + '</div></div></div>';
+}
+
+/* ---------- animation ---------- */
+var canAnimate = typeof requestAnimationFrame === "function" &&
+                 typeof performance !== "undefined" &&
+                 !(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+
+function resample(arr, n){
+  var out = [], i;
+  if (!arr || !arr.length){ for (i = 0; i < n; i++) out.push(0); return out; }
+  if (arr.length === n) return arr.slice();
+  for (i = 0; i < n; i++){
+    var p = (n === 1 ? 0 : i / (n - 1)) * (arr.length - 1);
+    var lo = Math.floor(p), hi = Math.min(arr.length - 1, lo + 1), f = p - lo;
+    out.push(arr[lo] * (1 - f) + arr[hi] * f);
+  }
+  return out;
+}
+function ease(t){ return 1 - Math.pow(1 - t, 3); }
+
+// Morph the line/area/bars from the previous scope's numbers to the new ones. The SVG is
+// already built at its final state, so nothing here can leave the chart lying.
+function tweenChart(svg, from, to, dur){
+  var line = svg.querySelector(".c-line"), area = svg.querySelector(".c-area");
+  if (!line || !area) return;
+  var bars = svg.querySelectorAll(".c-bar");
+  var late = svg.querySelectorAll(".c-pt, .c-fade, .c-safety, .c-safety-t");
+  var n = to.onhand.length, band = G.iw / n;
+  var f0 = resample(from.onhand, n), s0 = resample(from.ship, n);
+
+  Array.prototype.forEach.call(late, function(node){
+    node.style.transition = "opacity .3s"; node.style.opacity = "0";
+  });
+
+  var t0 = performance.now();
+  function cx(i){ return G.pl + band * i + band / 2; }
+  function frame(now){
+    var t = Math.min(1, (now - t0) / dur), e = ease(t);
+    var maxL = from.maxL + (to.maxL - from.maxL) * e;
+    var maxR = from.maxR + (to.maxR - from.maxR) * e;
+    var base = G.pt + G.ih, d = "", a = "M " + cx(0).toFixed(1) + " " + base, i;
+    for (i = 0; i < n; i++){
+      var v = f0[i] + (to.onhand[i] - f0[i]) * e;
+      var x = cx(i).toFixed(1), y = (base - (v / maxL) * G.ih).toFixed(1);
+      d += (i ? " L " : "M ") + x + " " + y;
+      a += " L " + x + " " + y;
+    }
+    a += " L " + cx(n - 1).toFixed(1) + " " + base + " Z";
+    line.setAttribute("d", d); area.setAttribute("d", a);
+    for (i = 0; i < bars.length; i++){
+      var sv = s0[i] + (to.ship[i] - s0[i]) * e;
+      var bh = Math.max(0, (sv / maxR) * G.ih);
+      bars[i].setAttribute("y", (base - bh).toFixed(1));
+      bars[i].setAttribute("height", bh.toFixed(1));
+    }
+    if (t < 1) requestAnimationFrame(frame);
+    else Array.prototype.forEach.call(late, function(node){ node.style.opacity = ""; });
+  }
+  requestAnimationFrame(frame);
+}
+
+function tweenNumber(node, from, to, dur){
+  var dec = (String(to).split(".")[1] || "").length;
+  var a = parseFloat(from), b = parseFloat(to);
+  if (isNaN(a) || isNaN(b) || a === b) return;
+  var t0 = performance.now();
+  (function frame(now){
+    var t = Math.min(1, (now - t0) / dur);
+    node.textContent = (a + (b - a) * ease(t)).toFixed(dec);
+    if (t < 1) requestAnimationFrame(frame);
+    else node.textContent = String(to);
+  })(t0);
+}
+
+function readMetrics(){
+  var out = {};
+  Array.prototype.forEach.call(el("canvas").querySelectorAll("[data-mk]"), function(n){
+    out[n.getAttribute("data-mk")] = n.getAttribute("data-num") || n.textContent;
+  });
+  return out;
+}
+
+function animateIn(prevMetrics){
+  if (!canAnimate) return;
+  Array.prototype.forEach.call(el("canvas").querySelectorAll("[data-chart]"), function(svg){
+    var id = svg.getAttribute("data-chart");
+    var from = CHART_PREV[id], to = CHART_NOW[id];
+    if (from && to) tweenChart(svg, from, to, 620);
+  });
+  Array.prototype.forEach.call(el("canvas").querySelectorAll("[data-mk][data-num]"), function(node){
+    var was = prevMetrics[node.getAttribute("data-mk")];
+    if (was !== undefined) tweenNumber(node, was, node.getAttribute("data-num"), 560);
+  });
+}
+
+/* ---------- full render ---------- */
+function render(){
+  var spec = state.spec;
+  var prevMetrics = readMetrics();
+  CHART_NOW = {};
+
+  var h = (lastChange ? changeBanner(lastChange) : "") + renderInterp(spec);
+  spec.blocks.forEach(function(b){ h += renderBlock(spec, b); });
+  if (!spec.blocks.length){
+    h += '<div class="block" style="padding:44px 20px; text-align:center">' +
+         '<p class="block-t" style="margin-bottom:6px">Nothing on the canvas</p>' +
+         '<p class="block-sub">Ask for a chart, a table or some metrics.</p></div>';
+  }
+  el("canvas").innerHTML = h;
+  renderThread(); renderTop(); renderTarget(); renderSuggestions();
+  animateIn(prevMetrics);
+
+  CHART_PREV = CHART_NOW;
+  lastChangedBlocks = []; lastUntouched = []; lastChange = null;
+}
+
+/* ============================================================
+   8 · interaction
+   ============================================================ */
+
+function toast(msg){
+  var t = el("toast");
+  t.textContent = msg; t.classList.add("on");
+  clearTimeout(t._h); t._h = setTimeout(function(){ t.classList.remove("on"); }, 2600);
+}
+
+function submit(text){
+  text = String(text || "").trim();
+  if (!text) return;
+  state.history.push(text); state.histIdx = state.history.length;
+
+  var ctx = {
+    spec: state.spec,
+    target: state.target,
+    nextId: function(){ return "b-new" + (state.nextBlock++); }
+  };
+  var ops = parseIntent(text, ctx);
+
+  if (!ops.length){
+    lastMiss = text;
+    render();
+    toast("No operation matched — the matcher is deliberately narrow");
+    return;
+  }
+  lastMiss = null;
+
+  // remember which blocks this turn touched, so they flash — and which it pointedly
+  // did not, so the block-vs-canvas distinction is visible rather than inferred
+  var touched = {}, scoped = false;
+  ops.forEach(function(o){
+    if (o.target && o.target !== "canvas"){ touched[o.target] = 1; scoped = true; }
+    else if (o.op === "block.add") touched[o.id] = 1;
+  });
+  if (!Object.keys(touched).length) state.spec.blocks.forEach(function(b){ touched[b.id] = 1; });
+
+  var before = digestFor(state.spec, state.target);
+  var turn = commit(text, ops);
+  var after = digestFor(state.spec, state.target);
+
+  lastChangedBlocks = Object.keys(touched);
+  lastUntouched = scoped ? state.spec.blocks.map(function(b){ return b.id; })
+                                            .filter(function(id){ return !touched[id]; }) : [];
+  lastChange = { verb:"You said", text:text, target:state.target, diff:turn.diff, before:before, after:after };
+
+  if (state.kept){ state.kept = false; toast("Workspace edited — keep it again to update the schedule"); }
+  render();
+  el("canvas").scrollTop = 0;
+}
+
+/* ---------- turn toggling (thread + tour both use this) ---------- */
+function toggleTurn(i){
+  var t = state.turns[i];
+  if (!t) return;
+  var before = digestFor(state.spec, "canvas");
+  t.on = !t.on;
+  replay();
+  var after = digestFor(state.spec, "canvas");
+  lastChangedBlocks = state.spec.blocks.map(function(b){ return b.id; });
+  lastMiss = null;
+  lastChange = {
+    verb: t.on ? "Restored" : "Reverted",
+    text: t.text, target:"canvas",
+    diff: t.diff.map(function(d){ return { kind: t.on ? "add" : "rm", text:d.text }; }),
+    before:before, after:after
+  };
+  render();
+  toast(t.on ? "Turn restored — replayed from the seed" : "Turn reverted — later turns still apply");
+}
+
+function doReset(){
+  state.turns = []; state.target = "canvas"; state.kept = false;
+  state.history = []; state.histIdx = -1; state.nextBlock = 1;
+  lastMiss = null; lastChange = null; lastChangedBlocks = []; lastUntouched = [];
+  CHART_PREV = {};
+  replay(); render();
+  el("cmdInput").value = "";
+}
+
+/* ---------- command input ---------- */
+var input = el("cmdInput");
+input.addEventListener("keydown", function(e){
+  if (e.key === "Enter"){ submit(input.value); input.value = ""; e.preventDefault(); }
+  else if (e.key === "Escape"){
+    if (state.target !== "canvas"){ state.target = "canvas"; render(); }
+    else input.value = "";
+  }
+  else if (e.key === "ArrowUp" && state.history.length){
+    if (state.histIdx > 0){ state.histIdx--; input.value = state.history[state.histIdx]; }
+    e.preventDefault();
+  }
+  else if (e.key === "ArrowDown" && state.history.length){
+    if (state.histIdx < state.history.length - 1){ state.histIdx++; input.value = state.history[state.histIdx]; }
+    else { state.histIdx = state.history.length; input.value = ""; }
+    e.preventDefault();
+  }
+});
+
+document.addEventListener("keydown", function(e){
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k"){ e.preventDefault(); input.focus(); input.select(); }
+  else if (e.key === "Escape" && document.activeElement !== input){
+    if (!el("keepScrim").hidden){ el("keepScrim").hidden = true; return; }
+    if (!el("aboutScrim").hidden){ el("aboutScrim").hidden = true; return; }
+    if (state.target !== "canvas"){ state.target = "canvas"; render(); }
+  }
+});
+
+/* ---------- canvas clicks: select block, drop chip, clear override ---------- */
+el("canvas").addEventListener("click", function(e){
+  var drop = e.target.closest("[data-drop]");
+  if (drop){
+    var k = drop.getAttribute("data-drop");
+    var label = { "scope.dcs":"all DCs", "scope.cats":"all categories", "scope.status":"all statuses",
+                  "window":"next 2 months", "schedule":"no schedule" }[k] || k;
+    if (k === "window")        submit("next 2 months");
+    else if (k === "schedule") { toast("Removing a schedule isn't wired in this prototype"); }
+    else                       submit(k === "scope.dcs" ? "all DCs" : k === "scope.cats" ? "all categories" : "all rows");
+    e.stopPropagation(); return;
+  }
+  var clr = e.target.closest("[data-clear]");
+  if (clr){
+    // Clearing an override is a turn like any other, so it lands in the thread and can be reverted.
+    var id = clr.getAttribute("data-clear");
+    var prev = state.target;
+    state.target = id;
+    submit("reset this block");
+    var restored = (prev === "canvas" || targetBlock(state.spec, prev)) ? prev : "canvas";
+    if (restored !== state.target){ state.target = restored; render(); }
+    e.stopPropagation(); return;
+  }
+  var blk = e.target.closest("[data-block]");
+  if (blk){
+    var bid = blk.getAttribute("data-block");
+    state.target = (state.target === bid) ? "canvas" : bid;
+    lastMiss = null;
+    render(); input.focus();
+  }
+});
+
+/* ---------- suggestions ---------- */
+el("sugg").addEventListener("click", function(e){
+  var s = e.target.closest("[data-sugg]");
+  if (!s) return;
+  submit(s.getAttribute("data-sugg"));
+  input.focus();
+});
+
+/* ---------- thread ---------- */
+el("threadBody").addEventListener("click", function(e){
+  var tog = e.target.closest("[data-toggle]");
+  if (tog){ toggleTurn(parseInt(tog.getAttribute("data-toggle"), 10)); return; }
+  var fork = e.target.closest("[data-fork]");
+  if (fork){
+    var j = parseInt(fork.getAttribute("data-fork"), 10);
+    input.value = state.turns[j].text;
+    input.focus(); input.select();
+  }
+});
+
+el("collapseBtn").addEventListener("click", function(){
+  var t = el("thread"), c = t.classList.toggle("collapsed");
+  el("collapseBtn").textContent = c ? "›" : "‹";
+  el("collapseBtn").title = (c ? "Expand" : "Collapse") + " intent thread";
+});
+
+/* ---------- keep / promotion ---------- */
+function openKeep(){
+  var spec = state.spec;
+  var w = spec.window;
+  var rel = w.kind === "relative" && !w.rolling;
+  var suggestedName = spec.name || (spec.scope.dcs && spec.scope.dcs.length === 1
+    ? DC_BY_ID[spec.scope.dcs[0]].name + " coverage watch" : "Coverage watch");
+
+  var h = "";
+  if (rel){
+    h += '<div class="resolve"><span class="resolve-k">Resolve</span><p>' +
+      'You explored with <b>“' + esc(windowLabel(w)) + '”</b>, anchored to ' + esc(fmtFull(TODAY)) + '. ' +
+      'On a schedule that has to mean something relative to <b>each run</b>, or in November this workspace still reports on August.' +
+      '</p></div>';
+    h += '<div class="field"><label for="kWindow">Window becomes</label><select id="kWindow">' +
+      '<option value="rolling">Rolling ' + w.n + ' ' + w.unit + (w.n === 1 ? "" : "s") + ' from each run date</option>' +
+      '<option value="absolute">Fixed ' + esc(fmtDay(resolveWindow(w).start)) + ' – ' + esc(fmtFull(resolveWindow(w).end)) + '</option>' +
+      '</select></div>';
+  }
+  h += '<div class="field"><label for="kName">Name</label><input id="kName" type="text" value="' + esc(suggestedName) + '"></div>';
+  h += '<div class="field"><label for="kSched">Refresh</label><select id="kSched">' +
+    '<option value="none"' + (spec.schedule ? "" : " selected") + '>No schedule — open it when I want</option>' +
+    '<option value="mon"' + (spec.schedule && spec.schedule.kind === "weekly" ? " selected" : "") + '>Every Monday 06:00</option>' +
+    '<option value="daily"' + (spec.schedule && spec.schedule.kind === "daily" ? " selected" : "") + '>Every day 06:00</option>' +
+    '</select></div>';
+  h += '<p class="modal-p" style="font-size:12.5px">' + spec.blocks.length + ' blocks · ' +
+       state.turns.filter(function(t){ return t.on; }).length + ' turns of derivation travel with it.</p>';
+
+  el("keepBody").innerHTML = h;
+  el("keepScrim").hidden = false;
+  var nm = el("kName"); if (nm){ nm.focus(); nm.select(); }
+}
+el("keepBtn").addEventListener("click", openKeep);
+
+el("keepCancel").addEventListener("click", function(){ el("keepScrim").hidden = true; });
+el("keepScrim").addEventListener("click", function(e){ if (e.target === el("keepScrim")) el("keepScrim").hidden = true; });
+el("aboutBtn").addEventListener("click", function(){ el("aboutScrim").hidden = false; });
+el("aboutClose").addEventListener("click", function(){ el("aboutScrim").hidden = true; });
+el("aboutScrim").addEventListener("click", function(e){ if (e.target === el("aboutScrim")) el("aboutScrim").hidden = true; });
+
+el("keepConfirm").addEventListener("click", function(){
+  var ops = [], w = state.spec.window;
+  var wSel = el("kWindow");
+  if (wSel){
+    if (wSel.value === "rolling") ops.push({ op:"window", target:"canvas", value:{ kind:"relative", n:w.n, unit:w.unit, rolling:true } });
+    else {
+      var r = resolveWindow(w);
+      ops.push({ op:"window", target:"canvas", value:{ kind:"absolute", start:+r.start, end:+r.end } });
+    }
+  }
+  var nm = el("kName").value.trim();
+  if (nm && nm !== state.spec.name) ops.push({ op:"name", target:"canvas", value:nm });
+  var s = el("kSched").value;
+  if (s === "mon")        ops.push({ op:"schedule", target:"canvas", value:{ kind:"weekly", day:"monday", time:"06:00", label:"Mondays 06:00" } });
+  else if (s === "daily") ops.push({ op:"schedule", target:"canvas", value:{ kind:"daily", time:"06:00", label:"Daily 06:00" } });
+
+  if (ops.length) commit("keep it", ops);
+  state.kept = true;
+  el("keepScrim").hidden = true;
+  lastChangedBlocks = state.spec.blocks.map(function(b){ return b.id; });
+  render();
+  toast("Kept — the thread travels with it, so whoever inherits this can read why");
+});
+
+/* ---------- strip buttons ---------- */
+el("resetBtn").addEventListener("click", function(){
+  stopTour();
+  doReset();
+  toast("Back to the seeded workspace");
+});
+
+var root = document.documentElement;
+el("themeBtn").addEventListener("click", function(){
+  // no data-theme means the light default is in effect
+  var cur = root.getAttribute("data-theme") || "light";
+  root.setAttribute("data-theme", cur === "dark" ? "light" : "dark");
+});
+
+/* ============================================================
+   9 · guided tour — the demo drives itself
+   ============================================================ */
+
+var tour = { on:false, skip:false, typing:false, resolve:null, timer:null };
+
+function sleep(ms){
+  return new Promise(function(res){
+    if (tour.skip) return res();
+    tour.resolve = res;
+    tour.timer = setTimeout(function(){ tour.resolve = null; res(); }, ms);
+  });
+}
+function skipStep(){
+  tour.skip = true;
+  if (tour.resolve){ clearTimeout(tour.timer); var r = tour.resolve; tour.resolve = null; r(); }
+}
+
+var spotted = null;
+function spot(sel){
+  if (spotted){ spotted.classList.remove("spot"); spotted = null; }
+  if (!sel) return;
+  var node = document.querySelector(sel);
+  if (node){ spotted = node; node.classList.add("spot"); scrollIntoCanvas(node); }
+}
+function scrollIntoCanvas(node){
+  var c = el("canvas");
+  if (!c.contains(node)) return;
+  var top = node.offsetTop - 12;
+  if (typeof c.scrollTo === "function") c.scrollTo({ top:top, behavior:"smooth" });
+  else c.scrollTop = top;
+}
+
+function moveCursor(node){
+  var c = el("ghostCursor");
+  if (!node){ c.classList.remove("on"); return; }
+  var r = node.getBoundingClientRect();
+  var x = r.left + Math.min(r.width / 2, 130), y = r.top + Math.min(r.height / 2, 26);
+  c.classList.add("on");
+  c.style.transform = "translate(" + (x - 8) + "px," + (y - 8) + "px)";
+}
+function tapCursor(){
+  var c = el("ghostCursor");
+  c.classList.remove("tap"); void c.offsetWidth; c.classList.add("tap");
+}
+
+async function tourType(text){
+  var inp = el("cmdInput");
+  spot(null);
+  moveCursor(el("cmdBox"));
+  await sleep(520);
+  tour.typing = true;
+  inp.value = "";
+  if (tour.skip) inp.value = text;
+  else for (var i = 0; i < text.length; i++){
+    inp.value = text.slice(0, i + 1);
+    if (tour.skip){ inp.value = text; break; }
+    await sleep(22 + Math.random() * 34);
+  }
+  await sleep(400);
+  tour.typing = false;
+  submit(inp.value);
+  inp.value = "";
+}
+
+async function tourClick(sel, then){
+  var node = document.querySelector(sel);
+  if (node){ moveCursor(node); await sleep(560); tapCursor(); await sleep(200); }
+  if (then) then();
+}
+
+var TOUR = [
+  {
+    h: "Seeded, not empty",
+    p: "Nothing here was asked for. The canvas arrives populated from the user's <b>role</b> — a purchasing manager at six DCs. Molding then means bending something that already exists, not conjuring from a blank page.",
+    spot: ".tcard.seed", hold: 4200
+  },
+  {
+    h: "The second turn is the whole thesis",
+    p: "Not a re-described request — a <b>nudge</b> to the one already on screen. Watch the chart morph, and watch the banner say exactly what moved.",
+    act: function(){ return tourType("okay now just chicago"); },
+    spot: ".change", hold: 5600
+  },
+  {
+    h: "Chicago is where it lands",
+    p: "Cover falls from 7 weeks to under 4, and the line now breaks through the <b>safety-stock rule</b> with a red band. The discovery is the payoff for refining rather than re-asking.",
+    spot: '[data-block="b-chart"]', hold: 5000
+  },
+  {
+    h: "The restatement is the trust mechanism",
+    p: "There's no compiler for &ldquo;is this the right business question&rdquo;. The substitute is restating the request in <b>warehouse language</b> before you believe the chart — and every chip is removable.",
+    spot: ".interp", hold: 4600
+  },
+  {
+    h: "Every block is addressable",
+    p: "Click a block and the command bar retargets to it. <b>Selection is the cheapest context signal you will ever get</b> — the user is already pointing.",
+    act: function(){ return tourClick('[data-block="b-table"] .block-head', function(){
+      state.target = "b-table"; lastMiss = null; render();
+    }); },
+    spot: "#cmdBox", hold: 4200
+  },
+  {
+    h: "Same words, one target",
+    p: "&ldquo;Only shortfalls&rdquo; spoken to the table scopes <b>the table</b>. The chart is marked unchanged and keeps its own scope. That divergence is what a single global prompt can never express.",
+    act: function(){ return tourType("only shortfalls"); },
+    spot: '[data-block="b-table"]', hold: 5400
+  },
+  {
+    h: "Turns are patches, not an undo stack",
+    p: "Reverting the Chicago turn replays the workspace <b>without it</b> — while the shortfall filter added afterwards still applies. That's only possible because every turn compiled to structured operations.",
+    act: async function(){
+      await tourClick('[data-toggle="0"]', function(){ toggleTurn(0); });
+      await sleep(3800);
+      await tourClick('[data-toggle="0"]', function(){ toggleTurn(0); });
+    },
+    spot: "#threadBody", hold: 3600
+  },
+  {
+    h: "Promotion is where sloppiness becomes recurring",
+    p: "&ldquo;Next 2 months&rdquo; was fine while exploring. On a schedule it has to become a <b>rolling window</b>, or in November this workspace still reports on August. Watch whether real users notice this unprompted.",
+    act: function(){ return tourClick("#keepBtn", openKeep); },
+    spot: ".resolve", hold: 6000
+  }
+];
+
+function narrate(i){
+  var st = TOUR[i];
+  el("narrateStep").textContent = (i + 1) + " / " + TOUR.length;
+  el("narrateH").textContent = st.h;
+  el("narrateP").innerHTML = st.p;
+  el("narrateBar").style.width = ((i + 1) / TOUR.length * 100) + "%";
+  el("narrate").classList.add("on");
+}
+
+async function runTour(){
+  tour.on = true;
+  el("playBtn").textContent = "■ Stop";
+  el("nextBtn").hidden = false;
+  el("keepScrim").hidden = true;
+  doReset();
+  await sleep(500);
+
+  for (var i = 0; i < TOUR.length; i++){
+    if (!tour.on) break;
+    tour.skip = false;
+    narrate(i);
+    await sleep(TOUR[i].lead || 1100);
+    if (!tour.on) break;
+    if (TOUR[i].act) await TOUR[i].act();
+    if (!tour.on) break;
+    if (TOUR[i].spot) spot(TOUR[i].spot);
+    moveCursor(null);
+    await sleep(TOUR[i].hold || 3200);
+  }
+
+  if (tour.on){
+    el("narrateStep").textContent = "done";
+    el("narrateH").textContent = "Your turn";
+    el("narrateP").innerHTML = "Type anything into the command bar, or click a block first to scope it. Try <b>&ldquo;bearings and hydraulics&rdquo;</b>, <b>&ldquo;by month&rdquo;</b>, <b>&ldquo;add supplier lead times&rdquo;</b>, <b>&ldquo;top 5&rdquo;</b>.";
+    setTimeout(function(){ if (!tour.on) return; el("narrate").classList.remove("on"); endTour(); }, 9000);
+  } else {
+    endTour();
+  }
+}
+
+function endTour(){
+  tour.on = false;
+  spot(null); moveCursor(null);
+  el("playBtn").textContent = "▶ Play the demo";
+  el("nextBtn").hidden = true;
+  el("cmdInput").focus();
+}
+function stopTour(){
+  if (!tour.on) return;
+  tour.on = false;
+  skipStep();
+  el("narrate").classList.remove("on");
+  endTour();
+}
+
+el("playBtn").addEventListener("click", function(){
+  if (tour.on){ stopTour(); el("narrate").classList.remove("on"); }
+  else runTour();
+});
+el("nextBtn").addEventListener("click", skipStep);
+
+// any real typing takes the wheel back from the tour
+el("cmdInput").addEventListener("keydown", function(e){
+  if (tour.on && !tour.typing && e.key.length === 1){ stopTour(); el("narrate").classList.remove("on"); }
+}, true);
+
+/* ---------- go ---------- */
+replay();
+render();
+input.focus();
+
+})();
+</script>
+</body>
+</html>
