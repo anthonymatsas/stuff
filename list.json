@@ -42,6 +42,13 @@
 		"category": "HTML/JS"
 	},
 	{
+		"name": "Blacktop 3v3",
+		"desc": "Half-court 3v3 streetball prototype. FIBA 3x3 court, shot meter, first to 21. Three.js, no build step.",
+		"path": "blacktop-3v3",
+		"tag": ["llm", "game", "opus 4.7"],
+		"category": "HTML/JS"
+	},
+	{
 		"name": "milo",
 		"url": "https://github.com/anthonymatsas/milo",
 		"desc": "cli tool exposing apples on device foundation models",
